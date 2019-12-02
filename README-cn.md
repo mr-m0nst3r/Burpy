@@ -10,7 +10,6 @@
 # Changelog
 
 - 开始使用类，而不用一个函数，这样我们可以在加载webdriver + selenium的时候将这个类创建起来，每次调用的时候就不用重复 webdriver+selenium的初始化过程。（经过测试，这样实现起来没有卡顿的感觉；因为webdriver+selenium 比较费时。如果你测试过一些H5页面，并且其中数据通过一些js函数进行了签名或者加密，你就知道我说的是什么了。）
-- added auto burpy call to do something for the whole body
 - 增加`自动调用`按钮，处理对象是http body。（所以需要自己解析相应参数）
 
 # Usage
