@@ -1,1 +1,2 @@
-targets/*
+target/*
+*/*.pyc
