@@ -1155,8 +1155,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			try {
 
 				Runtime rt = Runtime.getRuntime();
-
-				rt.exec("killall chromedriver");
+				
 
 				pyroBurpyService.call("shutdown");
 				pyroServerProcess.destroy();
