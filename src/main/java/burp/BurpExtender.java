@@ -554,7 +554,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 								printSuccessMessage("Pyro server started correctly");
 								printSuccessMessage("Better use \"Kill Server\" after finished!");
-								printSuccessMessage("Try \"killall chromedriver\" if your computer slows down");
 
 								// Standard line
 							} else {
@@ -621,7 +620,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		callbacks.saveExtensionSetting("pythonPath",pythonPath.getText().trim());
 		callbacks.saveExtensionSetting("pyroHost",pyroHost.getText().trim());
 		callbacks.saveExtensionSetting("pyroPort",pyroPort.getText().trim());
-		callbacks.saveExtensionSetting("fridaPath",burpyPath.getText().trim());
+		callbacks.saveExtensionSetting("burpyPath",burpyPath.getText().trim());
 
 	}
 
@@ -704,15 +703,22 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 		} else if(command.equals("startServer") && !serverStarted) {
 
-			savePersistentSettings();
+			File burpyFile = new File(burpyPath.getText().trim());
+			if (burpyFile.exists()) {
 
-			try {
+				savePersistentSettings();
 
-				launchPyroServer(pythonPath.getText().trim(),pythonScript);
+				try {
 
-			} catch (final Exception e) {
+					launchPyroServer(pythonPath.getText().trim(), pythonScript);
 
-				printException(null,"Exception starting Pyro server");
+				} catch (final Exception e) {
+
+					printException(null, "Exception starting Pyro server");
+
+				}
+			}else {
+				printException(null,"Burpy File not found!");
 
 			}
 
@@ -766,6 +772,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				byte[] selectedPortion = Arrays.copyOfRange(selectedRequestOrResponse, selectedBounds[0], selectedBounds[1]);
 				byte[] postSelectedPortion = Arrays.copyOfRange(selectedRequestOrResponse, selectedBounds[1], selectedRequestOrResponse.length);
 
+				// TODO: process selected Portion or the whole body is nothing is selected
 				final String s = (String)(pyroBurpyService.call("hello", new String[]{byteArrayToHexString(selectedPortion)}));
 
 				byte[] newRequest = ArrayUtils.addAll(preSelectedPortion, hexStringToByteArray(strToHexStr(s)));
