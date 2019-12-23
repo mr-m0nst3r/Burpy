@@ -3,7 +3,10 @@ import Pyro4
 import sys
 m_module = sys.argv[-1]
 import imp
-imp.load_source("f",m_module) #imp.load_source("test","/tmp/test.py")
+try:
+    imp.load_source("f",m_module) #imp.load_source("test","/tmp/test.py")
+except Exception:
+    print("Failed to get python file, pls recheck")
 from f import Burpy # which loads the destination file
 
 
@@ -19,8 +22,8 @@ class BridaServicePyro:
         return
 
     def hello_spawn(self):
-        m_param = 'spawn test'
-        return m_param
+        data = "it's working"
+        return self.burpy.main(data)
 
     def hello(self,data):
         data = data.decode("hex")
@@ -29,14 +32,17 @@ class BridaServicePyro:
         try:
             ret_val = self.burpy.main(data)
         except Exception as e:
-            print e
+            print( e )
             ret_val = "Can't find method name burpy or script file not found"
         return ret_val
 
     @Pyro4.oneway
     def shutdown(self):
         print('shutting down...')
-        self.burpy.down()
+        try:
+            self.burpy.down()
+        except Exception:
+            print("burpy.down() method not found, skipped.")
         self.daemon.shutdown()
 
 

@@ -1155,7 +1155,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			try {
 
 				Runtime rt = Runtime.getRuntime();
-				
+
 
 				pyroBurpyService.call("shutdown");
 				pyroServerProcess.destroy();
