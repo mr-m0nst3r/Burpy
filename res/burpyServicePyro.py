@@ -97,6 +97,15 @@ class BridaServicePyro:
             ret_val = "Can't find method name burpy or script file not found"
         return ret_val
 
+    def processor(self, data):
+        try:
+            ret_val = self.burpy.processor(data)
+            return ret_val
+        except Exception as e:
+            print( e )
+            return "Can't process payload"
+
+
     @Pyro4.oneway
     def shutdown(self):
         print('shutting down...')

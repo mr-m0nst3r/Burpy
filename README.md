@@ -18,6 +18,7 @@ You can enable/disable Enc/Dec/Sign in the UI so you can focus on the `Burpy Mai
 3. configure the python file you wanna run
 4. use `spawn` to test the result
 5. use `Burpy Main`/`Burpy Enc`/`Burpy Dec`/`Burpy Sign` context memu to invoke your script
+6. write own payload processor, especially usefull with enc/dec
 
 # the python script sample
 Just write your own logic to modify the header/body as your need, and return the header/body, just that simple!
@@ -44,9 +45,13 @@ class Burpy:
     def sign(self, header, body):
         header.append("Sign: AAA")
         return header, body
+
+    def processor(self, payload):
+        '''
+        payload processor function
+        '''
+        return payload+"123"
 ```
-# Todo
-[ ] Intruder payload generator
 
 # Reference
 the great Brida
