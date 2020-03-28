@@ -74,12 +74,12 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 	private JTextField burpyPath;
 	private JCheckBox chckbxNewCheckBox;
-	private JCheckBox chckbxCustom;
+
 	private JCheckBox chckbxEnc;
 	private JCheckBox chckbxDec;
 	private JCheckBox chckbxSign;
 
-	public Boolean isAutoSign = false;
+	public Boolean isAutoMain = false;
 	public Boolean should_cus = false;
 	public Boolean should_enc = false;
 	public Boolean should_dec = false;
@@ -326,35 +326,35 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				pyroPortPanel.add(pyroPort);
 
 				// auto intercepting
-				chckbxNewCheckBox = new JCheckBox("Enable auto burpy call, the whole http body will be passed");
-				chckbxNewCheckBox.setEnabled(true);
-				// set a property for later check whether this is enabled or not
-
-				chckbxNewCheckBox.addActionListener(new ActionListener(){
-					public void actionPerformed(ActionEvent e){
-						if(chckbxNewCheckBox.isSelected()) {
-							isAutoSign = true;
-							stdout.println("isAutoSign: " + isAutoSign);
-						}else {
-							isAutoSign = false;
-							stdout.println("isAutoSign: " + isAutoSign);
-						}
-					}
-				});
+//				chckbxNewCheckBox = new JCheckBox("Enable auto Burpy Main");
+//				chckbxNewCheckBox.setEnabled(true);
+//				// set a property for later check whether this is enabled or not
+//
+//				chckbxNewCheckBox.addActionListener(new ActionListener(){
+//					public void actionPerformed(ActionEvent e){
+//						if(chckbxNewCheckBox.isSelected()) {
+//							isAutoMain = true;
+//							stdout.println("isAutoMain: " + isAutoMain);
+//						}else {
+//							isAutoMain = false;
+//							stdout.println("isAutoMain: " + isAutoMain);
+//						}
+//					}
+//				});
 
 				// custom function
-				chckbxCustom = new JCheckBox("Enable Custom");
-				chckbxCustom.setEnabled(true);
-				chckbxCustom.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						if(chckbxCustom.isSelected()){
-							should_cus = true;
-						}else {
-							should_cus = false;
-						}
-					}
-				});
+//				chckbxCustom = new JCheckBox("Enable Custom");
+//				chckbxCustom.setEnabled(true);
+//				chckbxCustom.addActionListener(new ActionListener() {
+//					@Override
+//					public void actionPerformed(ActionEvent e) {
+//						if(chckbxCustom.isSelected()){
+//							should_cus = true;
+//						}else {
+//							should_cus = false;
+//						}
+//					}
+//				});
 
 				// enc function
 				chckbxEnc = new JCheckBox("Enable Encryption");
@@ -427,7 +427,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				configurationConfPanel.add(pyroHostPanel);
 				configurationConfPanel.add(pyroPortPanel);
 				configurationConfPanel.add(burpyPathPanel);
-				configurationConfPanel.add(chckbxNewCheckBox, autoSignBox);
+//				configurationConfPanel.add(chckbxNewCheckBox, autoSignBox);
 				configurationConfPanel.add(chckbxEnc, shouldEncBox);
 				configurationConfPanel.add(chckbxDec,shouldDecBox);
 				configurationConfPanel.add(chckbxSign,shouldSignBox);
@@ -1435,7 +1435,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
 		// Process only Repeater, Scanner and Intruder requests
 
-		if(this.isAutoSign) {
+		if(this.isAutoMain) {
 			if (toolFlag == IBurpExtenderCallbacks.TOOL_SCANNER ||
 					toolFlag == IBurpExtenderCallbacks.TOOL_REPEATER ||
 					toolFlag == IBurpExtenderCallbacks.TOOL_INTRUDER) {
