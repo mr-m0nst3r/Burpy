@@ -4,13 +4,14 @@ A plugin that allows you execute python and get return to BurpSuite.
 # Intro
 During Android APP pentesting, I found it very often that the traffic is encrypted and/or signed, it would be great to have a plugin so we can write python to enc/dec/sign.
 
-And, sometimes, you may just want some customized function to modify part of the traffic, or, generate payloads for your intruder, that when the `Burpy Main` comes for.
+And, sometimes, you may just want some customized function to modify part of the traffic, all you need is just `Burpy Main`.
 
-You can enable/disable Enc/Dec/Sign in the UI so you can focus on the `Burpy Main`
+If you wanna take advantage of the intruder with payloads need to be encrypted, you need to `Enable Processor`, and write your own payload processor function.
+
 # Changelog
 - change to use class instead of pure function, so that we can init webdriver+selenium when loading without init it per call
-- added auto burpy call to do something for the whole body
 - modified plugin to enable 4 function calls: main/enc/dec/sign
+- add payload processor
 
 # Usage
 1. install PyRO, version 4 is used.
