@@ -2,30 +2,51 @@
 A plugin that allows you execute python and get return to BurpSuite.
 
 # Intro
-The reason I wrote this plugin is that, this enables me to use python inside BurpSuite, especially when I have to use RSA to encrypt some plaintext and then send it to the server during pentest.
+During Android APP pentesting, I found it very often that the traffic is encrypted and/or signed, it would be great to have a plugin so we can write python to enc/dec/sign.
 
-Using this plugin, as described above, we can write a python script to do the RSA encryption using public key, then directly get the encrypted result from within Burp, saving life from tons of `copy`ing and `paste`ing between console and Burp.
+And, sometimes, you may just want some customized function to modify part of the traffic, or, generate payloads for your intruder, that when the `Burpy Main` comes for.
 
+You can enable/disable Enc/Dec/Sign in the UI so you can focus on the `Burpy Main`
 # Changelog
 - change to use class instead of pure function, so that we can init webdriver+selenium when loading without init it per call
 - added auto burpy call to do something for the whole body
+- modified plugin to enable 4 function calls: main/enc/dec/sign
 
 # Usage
 1. install PyRO, version 4 is used.
 2. configure python and pyro settings
 3. configure the python file you wanna run
 4. use `spawn` to test the result
-5. use `Burpy Call` context memu to invoke your script
+5. use `Burpy Main`/`Burpy Enc`/`Burpy Dec`/`Burpy Sign` context memu to invoke your script
 
 # the python script sample
-The following example is a base64 encode function
+Just write your own logic to modify the header/body as your need, and return the header/body, just that simple!
 ```python
-# the Burpy will call Burpy.main method, so make sure to return strings for this method, it's just that simple
 class Burpy:
-    def main(self,args):
-        from base64 import b64encode
-        return b64encode(args)
+    '''
+    header is list, append as your need
+    body is string, modify as your need
+    '''
+    def main(self, header, body):
+        header.append("Main: AAA")
+        print "head:", header
+        print "body:", body
+        return header, body
+    
+    def encrypt(self, header, body):
+        header.append("Enc: AAA")
+        return header, body
+
+    def decrypt(self, header, body):
+        header.append("Dec: AAA")
+        return header, body
+
+    def sign(self, header, body):
+        header.append("Sign: AAA")
+        return header, body
 ```
+# Todo
+[ ] Intruder payload generator
 
 # Reference
 the great Brida

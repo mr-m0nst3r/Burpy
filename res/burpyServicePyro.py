@@ -23,14 +23,75 @@ class BridaServicePyro:
 
     def hello_spawn(self):
         data = "it's working"
-        return self.burpy.main(data)
+        return data
 
-    def hello(self,data):
-        data = data.decode("hex")
+    def hello(self, header, body):
+        data = body[0].decode("hex")
         if data is None:
         	return "No data selected"
         try:
-            ret_val = self.burpy.main(data)
+            # header is a list, but body is string
+            # so we append body to header list
+            nheader, nbody = self.burpy.main(header, data)
+            nheader.append("")
+            nheader.append(nbody)
+            http_str = "\n".join(nheader)
+            ret_val = http_str
+
+        except Exception as e:
+            print( e )
+            ret_val = "Can't find method name burpy or script file not found"
+        return ret_val
+
+    def encrypt(self, header, body):
+        data = body[0].decode("hex")
+        if data is None:
+            return "No data selected"
+        try:
+            # header is a list, but body is string
+            # so we append body to header list
+            nheader, nbody = self.burpy.encrypt(header, data)
+            nheader.append("")
+            nheader.append(nbody)
+            http_str = "\n".join(nheader)
+            ret_val = http_str
+
+        except Exception as e:
+            print( e )
+            ret_val = "Can't find method name burpy or script file not found"
+        return ret_val
+
+    def decrypt(self, header, body):
+        data = body[0].decode("hex")
+        if data is None:
+            return "No data selected"
+        try:
+            # header is a list, but body is string
+            # so we append body to header list
+            nheader, nbody = self.burpy.decrypt(header, data)
+            nheader.append("")
+            nheader.append(nbody)
+            http_str = "\n".join(nheader)
+            ret_val = http_str
+
+        except Exception as e:
+            print( e )
+            ret_val = "Can't find method name burpy or script file not found"
+        return ret_val
+
+    def sign(self, header, body):
+        data = body[0].decode("hex")
+        if data is None:
+            return "No data selected"
+        try:
+            # header is a list, but body is string
+            # so we append body to header list
+            nheader, nbody = self.burpy.sign(header, data)
+            nheader.append("")
+            nheader.append(nbody)
+            http_str = "\n".join(nheader)
+            ret_val = http_str
+
         except Exception as e:
             print( e )
             ret_val = "Can't find method name burpy or script file not found"

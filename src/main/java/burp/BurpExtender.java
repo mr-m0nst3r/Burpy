@@ -39,7 +39,6 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.fife.ui.rsyntaxtextarea.FileLocation;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -75,7 +74,17 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 	private JTextField burpyPath;
 	private JCheckBox chckbxNewCheckBox;
+	private JCheckBox chckbxCustom;
+	private JCheckBox chckbxEnc;
+	private JCheckBox chckbxDec;
+	private JCheckBox chckbxSign;
+
 	public Boolean isAutoSign = false;
+	public Boolean should_cus = false;
+	public Boolean should_enc = false;
+	public Boolean should_dec = false;
+	public Boolean should_sign = false;
+
 
 	private Style redStyle;
 	private Style greenStyle;
@@ -90,6 +99,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	private boolean serverStarted;
 	private boolean applicationSpawned;
 	private IContextMenuInvocation currentInvocation;
+	private ITextEditor currentTextEditor;
 
 	private ITextEditor stubTextEditor;
 
@@ -332,11 +342,85 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					}
 				});
 
+				// custom function
+				chckbxCustom = new JCheckBox("Enable Custom");
+				chckbxCustom.setEnabled(true);
+				chckbxCustom.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						if(chckbxCustom.isSelected()){
+							should_cus = true;
+						}else {
+							should_cus = false;
+						}
+					}
+				});
+
+				// enc function
+				chckbxEnc = new JCheckBox("Enable Encryption");
+				chckbxEnc.setEnabled(true);
+				chckbxEnc.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						if (chckbxEnc.isSelected()){
+							should_enc = true;
+						}else {
+							should_enc = false;
+						}
+					}
+				});
+
+				// dec functioin
+				chckbxDec = new JCheckBox("Enable Decryption");
+				chckbxDec.setEnabled(true);
+				chckbxDec.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						if (chckbxDec.isSelected()){
+							should_dec = true;
+						}else {
+							should_dec = false;
+						}
+					}
+				});
+
+				// sign function
+				chckbxSign = new JCheckBox("Enable Sign");
+				chckbxSign.setEnabled(true);
+				chckbxSign.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						if (chckbxSign.isSelected()){
+							should_sign = true;
+						}else {
+							should_sign = false;
+						}
+					}
+				});
+
 				GridBagConstraints autoSignBox = new GridBagConstraints();
 				autoSignBox.fill = GridBagConstraints.HORIZONTAL;
 				autoSignBox.insets = new Insets(0, 0, 5, 0);
 				autoSignBox.gridx = 1;
 				autoSignBox.gridy = 3;
+
+				GridBagConstraints shouldEncBox = new GridBagConstraints();
+				shouldEncBox.fill = GridBagConstraints.HORIZONTAL;
+				shouldEncBox.insets = new Insets(0, 0, 5, 0);
+				shouldEncBox.gridx = 1;
+				shouldEncBox.gridy = 3;
+
+				GridBagConstraints shouldDecBox = new GridBagConstraints();
+				shouldDecBox.fill = GridBagConstraints.HORIZONTAL;
+				shouldDecBox.insets = new Insets(0, 0, 5, 0);
+				shouldDecBox.gridx = 1;
+				shouldDecBox.gridy = 3;
+
+				GridBagConstraints shouldSignBox = new GridBagConstraints();
+				shouldSignBox.fill = GridBagConstraints.HORIZONTAL;
+				shouldSignBox.insets = new Insets(0, 0, 5, 0);
+				shouldSignBox.gridx = 1;
+				shouldSignBox.gridy = 3;
 
 				configurationConfPanel.add(serverStatusPanel);
 				configurationConfPanel.add(pythonPathPanel);
@@ -344,6 +428,9 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				configurationConfPanel.add(pyroPortPanel);
 				configurationConfPanel.add(burpyPathPanel);
 				configurationConfPanel.add(chckbxNewCheckBox, autoSignBox);
+				configurationConfPanel.add(chckbxEnc, shouldEncBox);
+				configurationConfPanel.add(chckbxDec,shouldDecBox);
+				configurationConfPanel.add(chckbxSign,shouldSignBox);
 
 				// **** END CONFIGURATION PANEL
 
@@ -758,34 +845,169 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
 			int[] selectedBounds = currentInvocation.getSelectionBounds();
 			byte selectedInvocationContext = currentInvocation.getInvocationContext();
+			String s = null;
+			byte[] newHttp = null;
+			List<String> headers = null;
+			byte[] body = null;
 
 			try {
 
 				byte[] selectedRequestOrResponse = null;
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
 					selectedRequestOrResponse = selectedItems[0].getRequest();
+					IRequestInfo requestInfo = helpers.analyzeRequest(selectedRequestOrResponse);
+					headers = new ArrayList<String>(requestInfo.getHeaders());
+					String requestStr = new String(selectedRequestOrResponse);
+					body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
+
 				} else {
 					selectedRequestOrResponse = selectedItems[0].getResponse();
+					IResponseInfo responseInfo = helpers.analyzeResponse(selectedRequestOrResponse);
+					String responseStr = new String(selectedRequestOrResponse);
+					body = responseStr.substring(responseInfo.getBodyOffset()).getBytes();
 				}
 
-				byte[] preSelectedPortion = Arrays.copyOfRange(selectedRequestOrResponse, 0, selectedBounds[0]);
-				byte[] selectedPortion = Arrays.copyOfRange(selectedRequestOrResponse, selectedBounds[0], selectedBounds[1]);
-				byte[] postSelectedPortion = Arrays.copyOfRange(selectedRequestOrResponse, selectedBounds[1], selectedRequestOrResponse.length);
+				s = (String)pyroBurpyService.call("hello", headers, new String[]{byteArrayToHexString(body)});
+				newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 
-				// TODO: process selected Portion or the whole body is nothing is selected
-				final String s = (String)(pyroBurpyService.call("hello", new String[]{byteArrayToHexString(selectedPortion)}));
+				// Todo: set request/response accordingly and other commands
+				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					selectedItems[0].setRequest(newHttp);
+				} else {
+					selectedItems[0].setResponse(newHttp);
+				}
 
-				byte[] newRequest = ArrayUtils.addAll(preSelectedPortion, hexStringToByteArray(strToHexStr(s)));
-				newRequest = ArrayUtils.addAll(newRequest, postSelectedPortion);
-
-				selectedItems[0].setRequest(newRequest);
 
 			} catch (Exception e) {
 
-				printException(e,"Exception with custom context application");
+				printException(e, "Exception with custom context application");
 
 			}
+		}else if (command.equals("encrypt")) {
+			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
+			int[] selectedBounds = currentInvocation.getSelectionBounds();
+			byte selectedInvocationContext = currentInvocation.getInvocationContext();
+			String s = null;
+			byte[] newHttp = null;
+			List<String> headers = null;
+			byte[] body = null;
 
+			try {
+
+				byte[] selectedRequestOrResponse = null;
+				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					selectedRequestOrResponse = selectedItems[0].getRequest();
+					IRequestInfo requestInfo = helpers.analyzeRequest(selectedRequestOrResponse);
+					headers = new ArrayList<String>(requestInfo.getHeaders());
+					String requestStr = new String(selectedRequestOrResponse);
+					body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
+
+				} else {
+					selectedRequestOrResponse = selectedItems[0].getResponse();
+					IResponseInfo responseInfo = helpers.analyzeResponse(selectedRequestOrResponse);
+					String responseStr = new String(selectedRequestOrResponse);
+					body = responseStr.substring(responseInfo.getBodyOffset()).getBytes();
+				}
+
+				s = (String)pyroBurpyService.call("encrypt", headers, new String[]{byteArrayToHexString(body)});
+				newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
+
+				// Todo: set request/response accordingly and other commands
+				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					selectedItems[0].setRequest(newHttp);
+				} else {
+					selectedItems[0].setResponse(newHttp);
+				}
+
+			} catch (Exception e) {
+
+				printException(e, "Exception with custom context application");
+
+			}
+		}else if (command.equals("decrypt")) {
+
+			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
+			int[] selectedBounds = currentInvocation.getSelectionBounds();
+			byte selectedInvocationContext = currentInvocation.getInvocationContext();
+			String s = null;
+			byte[] newHttp = null;
+			List<String> headers = null;
+			byte[] body = null;
+
+			try {
+
+				byte[] selectedRequestOrResponse = null;
+				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					selectedRequestOrResponse = selectedItems[0].getRequest();
+					IRequestInfo requestInfo = helpers.analyzeRequest(selectedRequestOrResponse);
+					headers = new ArrayList<String>(requestInfo.getHeaders());
+					String requestStr = new String(selectedRequestOrResponse);
+					body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
+
+				} else {
+					selectedRequestOrResponse = selectedItems[0].getResponse();
+					IResponseInfo responseInfo = helpers.analyzeResponse(selectedRequestOrResponse);
+					String responseStr = new String(selectedRequestOrResponse);
+					body = responseStr.substring(responseInfo.getBodyOffset()).getBytes();
+				}
+
+				s = (String)pyroBurpyService.call("decrypt", headers, new String[]{byteArrayToHexString(body)});
+				newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
+
+				// Todo: set request/response accordingly and other commands
+				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					selectedItems[0].setRequest(newHttp);
+				} else {
+					selectedItems[0].setResponse(newHttp);
+				}
+
+			} catch (Exception e) {
+
+				printException(e, "Exception with custom context application");
+
+			}
+		}else if (command.equals("sign")) {
+
+			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
+			int[] selectedBounds = currentInvocation.getSelectionBounds();
+			byte selectedInvocationContext = currentInvocation.getInvocationContext();
+			String s = null;
+			byte[] newHttp = null;
+			List<String> headers = null;
+			byte[] body = null;
+
+			try {
+
+				byte[] selectedRequestOrResponse = null;
+				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					selectedRequestOrResponse = selectedItems[0].getRequest();
+					IRequestInfo requestInfo = helpers.analyzeRequest(selectedRequestOrResponse);
+					headers = new ArrayList<String>(requestInfo.getHeaders());
+					String requestStr = new String(selectedRequestOrResponse);
+					body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
+
+				} else {
+					selectedRequestOrResponse = selectedItems[0].getResponse();
+					IResponseInfo responseInfo = helpers.analyzeResponse(selectedRequestOrResponse);
+					String responseStr = new String(selectedRequestOrResponse);
+					body = responseStr.substring(responseInfo.getBodyOffset()).getBytes();
+				}
+
+				s = (String)pyroBurpyService.call("sign", headers, new String[]{byteArrayToHexString(body)});
+				newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
+
+				// Todo: set request/response accordingly and other commands
+				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					selectedItems[0].setRequest(newHttp);
+				} else {
+					selectedItems[0].setResponse(newHttp);
+				}
+
+			} catch (Exception e) {
+
+				printException(e, "Exception with custom context application");
+
+			}
 
 		} else if(command.equals("pythonPathSelectFile")) {
 
@@ -959,12 +1181,34 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 			List<JMenuItem> menu = new ArrayList<JMenuItem>();
 
-			JMenuItem itemCustom1 = new JMenuItem("Burpy Call");
+			JMenuItem itemCustom1 = new JMenuItem("Burpy Main");
 			itemCustom1.setActionCommand("contextcustom1");
 			itemCustom1.addActionListener(this);
 
-			menu.add(itemCustom1);
+			JMenuItem itemEnc = new JMenuItem("Burpy Enc");
+			itemEnc.setActionCommand("encrypt");
+			itemEnc.addActionListener(this);
 
+			JMenuItem itemDec = new JMenuItem("Burpy Dec");
+			itemDec.setActionCommand("decrypt");
+			itemDec.addActionListener(this);
+
+			JMenuItem itemSign = new JMenuItem("Burpy Sign");
+			itemSign.setActionCommand("sign");
+			itemSign.addActionListener(this);
+
+			menu.add(itemCustom1);
+			if (should_enc) {
+				menu.add(itemEnc);
+			}
+
+			if (should_dec) {
+				menu.add(itemDec);
+			}
+
+			if (should_sign) {
+				menu.add(itemSign);
+			}
 			return menu;
 
 		} else {
@@ -1006,6 +1250,20 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		return sb.toString().trim();
 
 	}
+
+//
+//	public static byte[] serializeObject(Object obj) throws IOException
+//	{
+//		ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+//		ObjectOutputStream oos = new ObjectOutputStream(bytesOut);
+//		oos.writeObject(obj);
+//		oos.flush();
+//		byte[] bytes = bytesOut.toByteArray();
+//		bytesOut.close();
+//		oos.close();
+//		return bytes;
+//	}
+
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
