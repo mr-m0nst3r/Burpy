@@ -14,6 +14,9 @@ If you wanna take advantage of the intruder with payloads need to be encrypted, 
 - add payload processor
 
 # Usage
+
+> check the examples for scripts
+
 1. install PyRO, version 4 is used.
 2. configure python and pyro settings
 3. configure the python file you wanna run
