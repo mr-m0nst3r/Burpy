@@ -853,9 +853,27 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 
 				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
 				} else {
-					selectedItems[0].setResponse(newHttp);
+					final String msg = s.substring(("RESPONSE").length()+2);
+					SwingUtilities.invokeLater(new Runnable() {
+
+						@Override
+						public void run() {
+
+							JTextArea ta = new JTextArea(10, 30);
+							ta.setText(msg);
+							ta.setWrapStyleWord(true);
+							ta.setLineWrap(true);
+							ta.setCaretPosition(0);
+							ta.setEditable(false);
+
+							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Custom invocation response", JOptionPane.INFORMATION_MESSAGE);
+
+						}
+
+					});
 				}
 
 
@@ -881,6 +899,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					IRequestInfo requestInfo = helpers.analyzeRequest(selectedRequestOrResponse);
 					headers = new ArrayList<String>(requestInfo.getHeaders());
 					String requestStr = new String(selectedRequestOrResponse);
+					printSuccessMessage(requestStr.substring(requestInfo.getBodyOffset()));
 					body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
 
 				} else {
@@ -891,12 +910,30 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				}
 
 				s = (String)pyroBurpyService.call("encrypt", headers, new String[]{byteArrayToHexString(body)});
-				newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
+
 
 				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
 				} else {
-					selectedItems[0].setResponse(newHttp);
+					final String msg = s.substring(("RESPONSE").length()+2);
+					SwingUtilities.invokeLater(new Runnable() {
+
+						@Override
+						public void run() {
+
+							JTextArea ta = new JTextArea(10, 30);
+							ta.setText(msg);
+							ta.setWrapStyleWord(true);
+							ta.setLineWrap(true);
+							ta.setCaretPosition(0);
+							ta.setEditable(false);
+
+							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Custom invocation response", JOptionPane.INFORMATION_MESSAGE);
+
+						}
+
+					});
 				}
 
 			} catch (Exception e) {
@@ -928,16 +965,37 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					selectedRequestOrResponse = selectedItems[0].getResponse();
 					IResponseInfo responseInfo = helpers.analyzeResponse(selectedRequestOrResponse);
 					String responseStr = new String(selectedRequestOrResponse);
+					headers = new ArrayList();
+					headers.add("RESPONSE");
 					body = responseStr.substring(responseInfo.getBodyOffset()).getBytes();
 				}
 
 				s = (String)pyroBurpyService.call("decrypt", headers, new String[]{byteArrayToHexString(body)});
-				newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
+
 
 				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
 				} else {
-					selectedItems[0].setResponse(newHttp);
+					final String msg = s.substring(("RESPONSE").length()+2);
+
+					SwingUtilities.invokeLater(new Runnable() {
+
+						@Override
+						public void run() {
+
+							JTextArea ta = new JTextArea(10, 30);
+							ta.setText(msg);
+							ta.setWrapStyleWord(true);
+							ta.setLineWrap(true);
+							ta.setCaretPosition(0);
+							ta.setEditable(false);
+
+							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Custom invocation response", JOptionPane.INFORMATION_MESSAGE);
+
+						}
+
+					});
 				}
 
 			} catch (Exception e) {
@@ -973,13 +1031,31 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				}
 
 				s = (String)pyroBurpyService.call("sign", headers, new String[]{byteArrayToHexString(body)});
-				newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
+
 
 				// Todo: set request/response accordingly and other commands
 				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
 				} else {
-					selectedItems[0].setResponse(newHttp);
+					final String msg = s.substring(("RESPONSE").length()+2);
+					SwingUtilities.invokeLater(new Runnable() {
+
+						@Override
+						public void run() {
+
+							JTextArea ta = new JTextArea(10, 30);
+							ta.setText(msg);
+							ta.setWrapStyleWord(true);
+							ta.setLineWrap(true);
+							ta.setCaretPosition(0);
+							ta.setEditable(false);
+
+							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Custom invocation response", JOptionPane.INFORMATION_MESSAGE);
+
+						}
+
+					});
 				}
 
 			} catch (Exception e) {
@@ -1140,6 +1216,32 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				menu.add(itemSign);
 			}
 			return menu;
+
+		} else if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST ||
+				invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
+
+			currentInvocation = invocation;
+
+			List<JMenuItem> menu = new ArrayList<JMenuItem>();
+
+			JMenuItem itemCustom1 = new JMenuItem("Burpy Main");
+			itemCustom1.setActionCommand("contextcustom1");
+			itemCustom1.addActionListener(this);
+
+
+			JMenuItem itemDec = new JMenuItem("Burpy Dec");
+			itemDec.setActionCommand("decrypt");
+			itemDec.addActionListener(this);
+
+
+			menu.add(itemCustom1);
+
+			if (should_dec) {
+				menu.add(itemDec);
+			}
+
+			return menu;
+
 
 		} else {
 

@@ -23,6 +23,8 @@ If you wanna take advantage of the intruder with payloads need to be encrypted, 
 
 # the python script sample
 Just write your own logic to modify the header/body as your need, and return the header/body, just that simple!
+Note: if you need to handle response data, e.g decrypt response, you need to check whether the `header[0]` is `RESPONSE` or not.
+If the data burpsuite sent to python comes from `response`, the header will be `header[0] == 'RESPONSE'`
 ```python
 class Burpy:
     '''
@@ -30,9 +32,6 @@ class Burpy:
     body is string, modify as your need
     '''
     def main(self, header, body):
-        header.append("Main: AAA")
-        print "head:", header
-        print "body:", body
         return header, body
     
     def encrypt(self, header, body):
@@ -40,7 +39,21 @@ class Burpy:
         return header, body
 
     def decrypt(self, header, body):
-        header.append("Dec: AAA")
+        '''
+        We usually use decrypt in two situations:
+        1- decrypt message that sent to the server
+        2- decrypt server response
+
+        So, it's necessary to make a check because the 2 situations are totally different in term of how burp should behave
+        '''
+        if(header[0] != 'RESPONSE'):
+            # meaning the data is not from response, so we can set new http header and body
+            # header = magic(header)
+            # body = magic(body)
+        else:
+            # meaning the data comes from response, we can't and don't need to renew it, so we just display it using pop box
+            # so you can just do your magic to body param
+            # body = magic(body)
         return header, body
 
     def sign(self, header, body):
