@@ -954,7 +954,8 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			try {
 
 				byte[] selectedRequestOrResponse = null;
-				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST ||
+						selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
 					selectedRequestOrResponse = selectedItems[0].getRequest();
 					IRequestInfo requestInfo = helpers.analyzeRequest(selectedRequestOrResponse);
 					headers = new ArrayList<String>(requestInfo.getHeaders());
@@ -976,6 +977,25 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
 					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
+				}else if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+					final String msg = s.substring(s.indexOf("\n\n")+2);
+					SwingUtilities.invokeLater(new Runnable() {
+
+						@Override
+						public void run() {
+
+							JTextArea ta = new JTextArea(10, 30);
+							ta.setText(msg);
+							ta.setWrapStyleWord(true);
+							ta.setLineWrap(true);
+							ta.setCaretPosition(0);
+							ta.setEditable(false);
+
+							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Custom invocation request", JOptionPane.INFORMATION_MESSAGE);
+
+						}
+
+					});
 				} else {
 					final String msg = s.substring(("RESPONSE").length()+2);
 
