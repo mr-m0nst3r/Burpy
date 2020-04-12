@@ -783,8 +783,8 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 		} else if(command.equals("loadPyFile")) {
 
-			File jsFile = new File(burpyPath.getText().trim());
-			final FileLocation fl = FileLocation.create(jsFile);
+			File pyFile = new File(burpyPath.getText().trim());
+			final FileLocation fl = FileLocation.create(pyFile);
 
 			SwingUtilities.invokeLater(new Runnable() {
 
