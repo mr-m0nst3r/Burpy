@@ -8,7 +8,6 @@ import java.awt.event.MouseListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,28 +15,18 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.swing.*;
 import javax.swing.JCheckBox;
-import javax.swing.border.LineBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreePath;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.fife.ui.rsyntaxtextarea.FileLocation;
@@ -45,7 +34,6 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.TextEditorPane;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
-import net.razorvine.pickle.PrettyPrint;
 import net.razorvine.pyro.*;
 
 
@@ -114,7 +102,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 	private JEditorPane pluginConsoleTextArea;
 
-	private TextEditorPane jsEditorTextArea;
+	private TextEditorPane pyEditorTextArea;
 
 	private Thread stdoutThread;
 	private Thread stderrThread;
@@ -420,11 +408,11 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				// **** END CONFIGURATION PANEL
 
 				// **** PY EDITOR PANEL / CONSOLE
-				jsEditorTextArea = new TextEditorPane();
-				jsEditorTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
-				jsEditorTextArea.setCodeFoldingEnabled(false);
-				RTextScrollPane sp = new RTextScrollPane(jsEditorTextArea);
-				jsEditorTextArea.setFocusable(true);
+				pyEditorTextArea = new TextEditorPane();
+				pyEditorTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
+				pyEditorTextArea.setCodeFoldingEnabled(false);
+				RTextScrollPane sp = new RTextScrollPane(pyEditorTextArea);
+				pyEditorTextArea.setFocusable(true);
 				// **** END PY EDITOR PANEL / CONSOLE
 
 				tabbedPanel.add("Configurations",configurationConfPanel);
@@ -804,7 +792,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				public void run() {
 
 					try {
-						jsEditorTextArea.load(fl, null);
+						pyEditorTextArea.load(fl, null);
 					} catch (IOException e) {
 						printException(e,"Exception loading PY file");
 					}
@@ -815,7 +803,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		} else if(command.equals("savePyFile")) {
 
 			try {
-				jsEditorTextArea.save();
+				pyEditorTextArea.save();
 				// TODO: stop pyro and start pyro
 
 			} catch (IOException e) {
