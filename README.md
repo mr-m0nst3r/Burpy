@@ -46,20 +46,10 @@ class Burpy:
 
     def decrypt(self, header, body):
         '''
-        We usually use decrypt in two situations:
-        1- decrypt message that sent to the server
-        2- decrypt server response
-
-        So, it's necessary to make a check because the 2 situations are totally different in term of how burp should behave
+        You may want to add logic if the response differ from the request, for example in the request, the encrypted data is followed after "data=", but in the response, the whole response body is encrypted data, without "data="
         '''
-        if(header[0] != 'RESPONSE'):
-            # meaning the data is not from response, so we can set new http header and body
-            # header = magic(header)
-            # body = magic(body)
-        else:
-            # meaning the data comes from response, we can't and don't need to renew it, so we just display it using pop box
-            # so you can just do your magic to body param
-            # body = magic(body)
+        # header = magic(header)
+        # body = magic(body)
         return header, body
 
     def sign(self, header, body):

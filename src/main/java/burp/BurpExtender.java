@@ -965,9 +965,10 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				} else {
 					selectedRequestOrResponse = selectedItems[0].getResponse();
 					IResponseInfo responseInfo = helpers.analyzeResponse(selectedRequestOrResponse);
+					headers = responseInfo.getHeaders();
 					String responseStr = new String(selectedRequestOrResponse);
-					headers = new ArrayList();
-					headers.add("RESPONSE");
+//					headers = new ArrayList();
+//					headers.add("RESPONSE");
 					body = responseStr.substring(responseInfo.getBodyOffset()).getBytes();
 				}
 
@@ -977,7 +978,8 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
 					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
-				}else if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+				}else if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST ||
+					selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE ) {
 					final String msg = s.substring(s.indexOf("\n\n")+2);
 					SwingUtilities.invokeLater(new Runnable() {
 
@@ -991,32 +993,33 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 							ta.setCaretPosition(0);
 							ta.setEditable(false);
 
-							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Custom invocation request", JOptionPane.INFORMATION_MESSAGE);
-
-						}
-
-					});
-				} else {
-					final String msg = s.substring(("RESPONSE").length()+2);
-
-					SwingUtilities.invokeLater(new Runnable() {
-
-						@Override
-						public void run() {
-
-							JTextArea ta = new JTextArea(10, 30);
-							ta.setText(msg);
-							ta.setWrapStyleWord(true);
-							ta.setLineWrap(true);
-							ta.setCaretPosition(0);
-							ta.setEditable(false);
-
-							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Custom invocation response", JOptionPane.INFORMATION_MESSAGE);
+							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Custom invocation", JOptionPane.INFORMATION_MESSAGE);
 
 						}
 
 					});
 				}
+//				else {
+//					final String msg = s.substring(("RESPONSE").length()+2);
+//
+//					SwingUtilities.invokeLater(new Runnable() {
+//
+//						@Override
+//						public void run() {
+//
+//							JTextArea ta = new JTextArea(10, 30);
+//							ta.setText(msg);
+//							ta.setWrapStyleWord(true);
+//							ta.setLineWrap(true);
+//							ta.setCaretPosition(0);
+//							ta.setEditable(false);
+//
+//							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Custom invocation response", JOptionPane.INFORMATION_MESSAGE);
+//
+//						}
+//
+//					});
+//				}
 
 			} catch (Exception e) {
 

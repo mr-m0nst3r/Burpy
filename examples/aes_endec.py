@@ -26,8 +26,7 @@ class Burpy:
         return header, body
     
     def encrypt(self, header, body):
-
-        if(header[0] != 'RESPONSE'):
+        if(self.apicode != ''):
             print "Encryption Called"
             self.apicode = re.search(r'.*api/(\d+)\.app', header[0]).group(1)
             self.head = body.split("&")[0][len('head='):]
@@ -46,8 +45,6 @@ class Burpy:
 
             ret_body = "head=" + self.head + "&" + body_param
             body = ret_body
-        else:
-            body = "response encryption not implemented"
 
         
         
@@ -55,7 +52,7 @@ class Burpy:
 
     def decrypt(self, header, body):
 
-        if(header[0] != 'RESPONSE'):
+        if(self.apicode != ''):
             print "Decryption Called"
             self.apicode = re.search(r'.*api/(\d+)\.app', header[0]).group(1)
             self.head = body.split("&")[0][len('head='):]
