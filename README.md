@@ -29,8 +29,7 @@ m0nst3r(Song Xinlei)@ @CFCA
 
 # the python script sample
 Just write your own logic to modify the header/body as your need, and return the header/body, just that simple!
-Note: if you need to handle response data, e.g decrypt response, you need to check whether the `header[0]` is `RESPONSE` or not.
-If the data burpsuite sent to python comes from `response`, the header will be `header[0] == 'RESPONSE'`
+Note: if you need to handle response data, e.g decrypt response, you may want to write if-else, because in some cases, the response is different with the request. For example, the request is `encrypted=XXXXXX`, but the response is `XXXXXX`, without `encrypted`. 
 ```python
 class Burpy:
     '''
