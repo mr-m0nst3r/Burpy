@@ -11,6 +11,9 @@ If you wanna take advantage of the intruder with payloads need to be encrypted, 
 # Author
 m0nst3r(Song Xinlei)@ @CFCA
 
+# TODO
+- to python3
+
 # Changelog
 - change to use class instead of pure function, so that we can init webdriver+selenium when loading without init it per call
 - modified plugin to enable 4 function calls: main/enc/dec/sign
