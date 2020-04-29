@@ -22,6 +22,7 @@ m0nst3r(Song Xinlei)@ @CFCA
 # Usage
 
 > check the examples for scripts
+> NOTE: MAKE SURE YOU HAVE ALL DEPENDENCIES INSTALLED, INCLUDING THE DEPENDENCIES NEEDED FOR YOUR PYTHON SCRIPT
 
 1. install PyRO, version 4 is used.
 2. configure python and pyro settings
