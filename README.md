@@ -40,6 +40,12 @@ class Burpy:
     header is list, append as your need
     body is string, modify as your need
     '''
+    def __init__(self):
+        '''
+        here goes some code that will be kept since "start server" clicked, for example, webdriver, which usually takes long time to init
+        '''
+        pass
+        
     def main(self, header, body):
         return header, body
     
