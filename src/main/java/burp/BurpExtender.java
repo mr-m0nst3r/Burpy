@@ -37,7 +37,7 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 import net.razorvine.pyro.*;
 
 
-public class BurpExtender implements IBurpExtender, ITab, ActionListener, IContextMenuFactory, MouseListener, IExtensionStateListener, IIntruderPayloadProcessor {
+public class BurpExtender implements IBurpExtender, ITab, ActionListener, IContextMenuFactory, MouseListener, IExtensionStateListener, IIntruderPayloadProcessor,IHttpListener {
 
 	public static final int PLATFORM_ANDROID = 0;
 	public static final int PLATFORM_IOS = 1;
@@ -67,6 +67,10 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	private JCheckBox chckbxDec;
 	private JCheckBox chckbxSign;
 	private JCheckBox chckbxPro;
+	private JCheckBox chckbxAuto;
+
+	public JMenuItem itemEnc;
+	public JMenuItem itemDec;
 
 	public Boolean isAutoMain = false;
 	public Boolean should_cus = false;
@@ -74,6 +78,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	public Boolean should_dec = false;
 	public Boolean should_sign = false;
 	public Boolean should_pro = false;
+	public Boolean should_auto = false;
 
 
 	private Style redStyle;
@@ -304,7 +309,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				if(callbacks.loadExtensionSetting("pyroPort") != null)
 					pyroPort.setText(callbacks.loadExtensionSetting("pyroPort"));
 				else
-					pyroPort.setText("9999");
+					pyroPort.setText("19999");
 				pyroPort.setMaximumSize( pyroPort.getPreferredSize() );
 				pyroPortPanel.add(labelPyroPort);
 				pyroPortPanel.add(pyroPort);
@@ -364,6 +369,20 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					}
 				});
 
+				chckbxAuto = new JCheckBox("Enable Auto Enc/Dec");
+				chckbxAuto.setEnabled(true);
+				chckbxAuto.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent actionEvent) {
+						if (chckbxAuto.isSelected()){
+							should_auto = true;
+						} else {
+							should_auto = false;
+						}
+					}
+				});
+
+
 				GridBagConstraints autoSignBox = new GridBagConstraints();
 				autoSignBox.fill = GridBagConstraints.HORIZONTAL;
 				autoSignBox.insets = new Insets(0, 0, 5, 0);
@@ -394,6 +413,13 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				shouldProBox.gridx = 1;
 				shouldProBox.gridy = 3;
 
+				GridBagConstraints shouldAutoBox = new GridBagConstraints();
+				shouldAutoBox.fill = GridBagConstraints.HORIZONTAL;
+				shouldAutoBox.insets = new Insets(0, 0, 5, 0);
+				shouldAutoBox.gridx = 1;
+				shouldAutoBox.gridy = 3;
+
+
 				configurationConfPanel.add(serverStatusPanel);
 				configurationConfPanel.add(pythonPathPanel);
 				configurationConfPanel.add(pyroHostPanel);
@@ -404,6 +430,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				configurationConfPanel.add(chckbxDec,shouldDecBox);
 				configurationConfPanel.add(chckbxSign,shouldSignBox);
 				configurationConfPanel.add(chckbxPro,shouldProBox);
+				configurationConfPanel.add(chckbxAuto, shouldAutoBox);
 
 				// **** END CONFIGURATION PANEL
 
@@ -512,7 +539,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			}
 
 		});
-//		callbacks.registerHttpListener(this);
+		callbacks.registerHttpListener(this);
 
 	}
 
@@ -693,6 +720,8 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 		String command = event.getActionCommand();
 
+
+
 		if(command.equals("spawnApplication") && serverStarted) {
 
 			try {
@@ -828,6 +857,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					IRequestInfo requestInfo = helpers.analyzeRequest(selectedRequestOrResponse);
 					headers = new ArrayList<String>(requestInfo.getHeaders());
 					String requestStr = new String(selectedRequestOrResponse);
+					printSuccessMessage(requestStr.substring(requestInfo.getBodyOffset()));
 					body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
 
 				} else {
@@ -838,13 +868,13 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				}
 
 				s = (String)pyroBurpyService.call("hello", headers, new String[]{byteArrayToHexString(body)});
-				newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
+
 
 				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
 					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
 				} else {
-					final String msg = s.substring(("RESPONSE").length()+2);
+					final String msg = s;//.substring(("RESPONSE").length()+2);
 					SwingUtilities.invokeLater(new Runnable() {
 
 						@Override
@@ -863,7 +893,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 					});
 				}
-
 
 			} catch (Exception e) {
 
@@ -904,7 +933,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
 				} else {
-					final String msg = s.substring(("RESPONSE").length()+2);
+					final String msg = s;//.substring(("RESPONSE").length()+2);
 					SwingUtilities.invokeLater(new Runnable() {
 
 						@Override
@@ -1049,7 +1078,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
 				} else {
-					final String msg = s.substring(("RESPONSE").length()+2);
+					final String msg = s;//.substring(("RESPONSE").length()+2);
 					SwingUtilities.invokeLater(new Runnable() {
 
 						@Override
@@ -1202,11 +1231,11 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			itemCustom1.setActionCommand("contextcustom1");
 			itemCustom1.addActionListener(this);
 
-			JMenuItem itemEnc = new JMenuItem("Burpy Enc");
+			itemEnc = new JMenuItem("Burpy Enc");
 			itemEnc.setActionCommand("encrypt");
 			itemEnc.addActionListener(this);
 
-			JMenuItem itemDec = new JMenuItem("Burpy Dec");
+			itemDec = new JMenuItem("Burpy Dec");
 			itemDec.setActionCommand("decrypt");
 			itemDec.addActionListener(this);
 
@@ -1240,9 +1269,11 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			itemCustom1.addActionListener(this);
 
 
+
 			JMenuItem itemDec = new JMenuItem("Burpy Dec");
 			itemDec.setActionCommand("decrypt");
 			itemDec.addActionListener(this);
+
 
 
 			menu.add(itemCustom1);
@@ -1473,7 +1504,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		byte[] ret = currentPayload;
 		if(should_pro){
 
-			String pyroUrl = "PYRO:BridaServicePyro@localhost:9999";
+			String pyroUrl = "PYRO:BridaServicePyro@localhost:19999";
 			try {
 				PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
 				final String s = (String) (pyroBurpyService.call("processor", new String(currentPayload)));
@@ -1490,6 +1521,107 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 		return ret;
 	}
+
+	public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
+		List<String> headers = null;
+		String pyroUrl = "PYRO:BridaServicePyro@" + pyroHost.getText() +":" + pyroPort.getText();
+		if (should_auto) {
+//			itemEnc.doClick();
+			if (toolFlag == IBurpExtenderCallbacks.TOOL_SCANNER ||
+					toolFlag == IBurpExtenderCallbacks.TOOL_REPEATER ||
+					toolFlag == IBurpExtenderCallbacks.TOOL_INTRUDER) {
+				if (messageIsRequest) {
+//					itemEnc.doClick();
+					// Get request bytes
+					byte[] request = messageInfo.getRequest();
+					// Get a IRequestInfo object, useful to work with the request
+					IRequestInfo requestInfo = helpers.analyzeRequest(request);
+					// Get the headers
+					headers = requestInfo.getHeaders();
+					// Get "test" parameter
+					//IParameter contentParameter = helpers.getRequestParameter(request, "content");
+					// Get body
+					String requestStr = new String(request);
+					byte[] body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
+//					String ret = "";
+					if(body != null) {
+						//String urlDecodedContentParameterValue = helpers.urlDecode(contentParameter.getValue());
+						String ret = "";
+						// Ask Brida to encrypt our attack vector
+//						String pyroUrl = "PYRO:BridaServicePyro@localhost:19999";
+						try {
+							PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
+
+							ret = (String)pyroBurpyService.call("encrypt", headers, new String[]{byteArrayToHexString(body)});
+
+							pp.close();
+						} catch(Exception e) {
+							stderr.println(e.toString());
+							StackTraceElement[] exceptionElements = e.getStackTrace();
+							for(int i=0; i< exceptionElements.length; i++) {
+								stderr.println(exceptionElements[i].toString());
+							}
+						}
+						// Create the new parameter
+						//IParameter newTestParameter = helpers.buildParameter(contentParameter.getName(), helpers.urlEncode(ret), contentParameter.getType());
+						// Create the new request with the updated parameter
+						//byte[] newRequest = helpers.updateParameter(request, newTestParameter);
+
+						byte[] newRequest = helpers.buildHttpMessage(headers, helpers.stringToBytes(ret)); //
+
+						// Update the messageInfo object with the modified request (otherwise the request remains the old one)
+
+						messageInfo.setRequest(newRequest);
+					}
+				}else {
+//					itemDec.doClick();
+					// Get request bytes
+					byte[] request = messageInfo.getRequest();
+					// Get a IRequestInfo object, useful to work with the request
+					IRequestInfo requestInfo = helpers.analyzeRequest(request);
+					// Get "test" parameter
+					//IParameter contentParameter = helpers.getRequestParameter(request, "content");
+					// Get body
+					String requestStr = new String(request);
+
+					byte[] reqbody = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
+					if(reqbody != null) {
+						// Get response bytes
+						byte[] response = messageInfo.getResponse();
+						// Get a IResponseInfo object, useful to work with the request
+						IResponseInfo responseInfo = helpers.analyzeResponse(response);
+						// Get the offset of the body
+						int bodyOffset = responseInfo.getBodyOffset();
+						// Get the body (byte array and String)
+						byte[] body = Arrays.copyOfRange(response, bodyOffset, response.length);
+						String bodyString = helpers.bytesToString(body);
+						String ret = "";
+						// Ask Brida to decrypt the response
+//						String pyroUrl = "PYRO:BridaServicePyro@localhost:19999";
+						try {
+							PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
+							ret = (String)pyroBurpyService.call("decrypt", headers, new String[]{byteArrayToHexString(body)});
+
+							stderr.println(ret);
+							pp.close();
+						} catch(Exception e) {
+							stderr.println(e.toString());
+							StackTraceElement[] exceptionElements = e.getStackTrace();
+							for(int i=0; i< exceptionElements.length; i++) {
+								stderr.println(exceptionElements[i].toString());
+							}
+						}
+						// Update the messageInfo object with the modified request (otherwise the request remains the old one)
+						byte[] newResponse = ArrayUtils.addAll(Arrays.copyOfRange(response, 0, bodyOffset),ret.getBytes());
+						messageInfo.setResponse(newResponse);
+					}
+				}
+
+			}
+
+		}
+
+	}
+
 }
 
-		

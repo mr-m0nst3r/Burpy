@@ -41,7 +41,7 @@ class BridaServicePyro:
 
         except Exception as e:
             print( e )
-            ret_val = "Can't find method name burpy or script file not found"
+            ret_val = "helo(main) BurpyService failed"
         return ret_val
 
     def encrypt(self, header, body):
@@ -52,14 +52,14 @@ class BridaServicePyro:
             # header is a list, but body is string
             # so we append body to header list
             nheader, nbody = self.burpy.encrypt(header, data)
-            # nheader.append("")
+            nheader.append("")
             nheader.append(nbody)
             http_str = "\n".join(nheader)
             ret_val = http_str
 
         except Exception as e:
             print( e )
-            ret_val = "Can't find method name burpy or script file not found"
+            ret_val = "Encrypt in BurpyService failed"
         return ret_val
 
     def decrypt(self, header, body):
@@ -70,6 +70,7 @@ class BridaServicePyro:
             # header is a list, but body is string
             # so we append body to header list
             nheader, nbody = self.burpy.decrypt(header, data)
+            nheader = nheader or list()
             nheader.append("")
             nheader.append(nbody)
             http_str = "\n".join(nheader)
@@ -77,7 +78,7 @@ class BridaServicePyro:
 
         except Exception as e:
             print( e )
-            ret_val = "Can't find method name burpy or script file not found"
+            ret_val = "Decrypt in BurpyService Failed"
         return ret_val
 
     def sign(self, header, body):
@@ -111,7 +112,8 @@ class BridaServicePyro:
     def shutdown(self):
         print('shutting down...')
         try:
-            self.burpy.down()
+            # self.burpy.down()
+            del self.burpy
         except Exception:
             print("burpy.down() method not found, skipped.")
         self.daemon.shutdown()

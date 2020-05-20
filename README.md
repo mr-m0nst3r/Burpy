@@ -9,7 +9,7 @@ And, sometimes, you may just want some customized function to modify part of the
 If you wanna take advantage of the intruder with payloads need to be encrypted, you need to `Enable Processor`, and write your own payload processor function.
 
 # Author
-m0nst3r(Song Xinlei)@ @CFCA
+m0nst3r(Song Xinlei) @ CFCA
 
 # TODO
 - to python3
@@ -18,6 +18,8 @@ m0nst3r(Song Xinlei)@ @CFCA
 - change to use class instead of pure function, so that we can init webdriver+selenium when loading without init it per call
 - modified plugin to enable 4 function calls: main/enc/dec/sign
 - add payload processor
+- add auto enc/dec. encryption called when you click GO in burp, and decryption called when receive response
+- changed default pyro4 port, avoiding brida conflicts
 
 # Usage
 
