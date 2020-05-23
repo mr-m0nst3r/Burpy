@@ -1503,8 +1503,8 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	{
 		byte[] ret = currentPayload;
 		if(should_pro){
-
-			String pyroUrl = "PYRO:BridaServicePyro@localhost:19999";
+			String pyroUrl = "PYRO:BridaServicePyro@" + pyroHost.getText() +":" + pyroPort.getText();
+			
 			try {
 				PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
 				final String s = (String) (pyroBurpyService.call("processor", new String(currentPayload)));
@@ -1542,12 +1542,12 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					//IParameter contentParameter = helpers.getRequestParameter(request, "content");
 					// Get body
 					String requestStr = new String(request);
-					byte[] body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
+					int bodyOffset = requestInfo.getBodyOffset();
+					byte[] body = requestStr.substring(bodyOffset).getBytes();
 //					String ret = "";
 					if(body != null) {
 						//String urlDecodedContentParameterValue = helpers.urlDecode(contentParameter.getValue());
 						String ret = "";
-						// Ask Brida to encrypt our attack vector
 //						String pyroUrl = "PYRO:BridaServicePyro@localhost:19999";
 						try {
 							PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
@@ -1566,8 +1566,12 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 						//IParameter newTestParameter = helpers.buildParameter(contentParameter.getName(), helpers.urlEncode(ret), contentParameter.getType());
 						// Create the new request with the updated parameter
 						//byte[] newRequest = helpers.updateParameter(request, newTestParameter);
+						IRequestInfo nreqInfo = helpers.analyzeRequest(ret.getBytes());
+						headers = nreqInfo.getHeaders();
+						int nbodyOff = nreqInfo.getBodyOffset();
+						byte[] nbody = ret.substring(nbodyOff).getBytes();
 
-						byte[] newRequest = helpers.buildHttpMessage(headers, helpers.stringToBytes(ret)); //
+						byte[] newRequest = helpers.buildHttpMessage(headers, nbody); //
 
 						// Update the messageInfo object with the modified request (otherwise the request remains the old one)
 
@@ -1588,19 +1592,21 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					if(reqbody != null) {
 						// Get response bytes
 						byte[] response = messageInfo.getResponse();
+						String responseStr = new String(response);
 						// Get a IResponseInfo object, useful to work with the request
 						IResponseInfo responseInfo = helpers.analyzeResponse(response);
+						List<String> responseHeaders = responseInfo.getHeaders();
 						// Get the offset of the body
 						int bodyOffset = responseInfo.getBodyOffset();
 						// Get the body (byte array and String)
-						byte[] body = Arrays.copyOfRange(response, bodyOffset, response.length);
-						String bodyString = helpers.bytesToString(body);
+//						byte[] body = Arrays.copyOfRange(response, bodyOffset, response.length);
+						byte[] body = responseStr.substring(bodyOffset).getBytes();
+//						String bodyString = helpers.bytesToString(body);
 						String ret = "";
-						// Ask Brida to decrypt the response
 //						String pyroUrl = "PYRO:BridaServicePyro@localhost:19999";
 						try {
 							PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
-							ret = (String)pyroBurpyService.call("decrypt", headers, new String[]{byteArrayToHexString(body)});
+							ret = (String)pyroBurpyService.call("decrypt", responseHeaders, new String[]{byteArrayToHexString(body)});
 
 							stderr.println(ret);
 							pp.close();
@@ -1612,7 +1618,11 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 							}
 						}
 						// Update the messageInfo object with the modified request (otherwise the request remains the old one)
-						byte[] newResponse = ArrayUtils.addAll(Arrays.copyOfRange(response, 0, bodyOffset),ret.getBytes());
+//						byte[] newResponse = ArrayUtils.addAll(Arrays.copyOfRange(response, 0, bodyOffset),ret.getBytes());
+						IResponseInfo nresInfo = helpers.analyzeResponse(ret.getBytes());
+						int nbodyOff = nresInfo.getBodyOffset();
+						byte[] nbody = ret.substring(nbodyOff).getBytes();
+						byte[] newResponse = helpers.buildHttpMessage(responseHeaders, nbody);
 						messageInfo.setResponse(newResponse);
 					}
 				}

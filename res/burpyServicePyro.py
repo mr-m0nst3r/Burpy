@@ -36,7 +36,7 @@ class BridaServicePyro:
             nheader, nbody = self.burpy.main(header, data)
             nheader.append("")
             nheader.append(nbody)
-            http_str = "\n".join(nheader)
+            http_str = "\x0d\x0a".join(nheader)
             ret_val = http_str
 
         except Exception as e:
@@ -52,9 +52,9 @@ class BridaServicePyro:
             # header is a list, but body is string
             # so we append body to header list
             nheader, nbody = self.burpy.encrypt(header, data)
-            nheader.append("")
+            header.append("")
             nheader.append(nbody)
-            http_str = "\n".join(nheader)
+            http_str = "\x0d\x0a".join(nheader)
             ret_val = http_str
 
         except Exception as e:
@@ -73,7 +73,7 @@ class BridaServicePyro:
             nheader = nheader or list()
             nheader.append("")
             nheader.append(nbody)
-            http_str = "\n".join(nheader)
+            http_str = "\x0d\x0a".join(nheader)
             ret_val = http_str
 
         except Exception as e:
@@ -91,7 +91,7 @@ class BridaServicePyro:
             nheader, nbody = self.burpy.sign(header, data)
             nheader.append("")
             nheader.append(nbody)
-            http_str = "\n".join(nheader)
+            http_str = "\x0d\x0a".join(nheader)
             ret_val = http_str
 
         except Exception as e:
