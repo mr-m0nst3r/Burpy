@@ -874,7 +874,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
 				} else {
-					final String msg = s;//.substring(("RESPONSE").length()+2);
+					final String msg = s.substring(s.indexOf("\r\n\r\n"));
 					SwingUtilities.invokeLater(new Runnable() {
 
 						@Override
@@ -933,7 +933,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
 				} else {
-					final String msg = s;//.substring(("RESPONSE").length()+2);
+					final String msg = s.substring(s.indexOf("\r\n\r\n")+4);
 					SwingUtilities.invokeLater(new Runnable() {
 
 						@Override
@@ -997,7 +997,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					selectedItems[0].setRequest(newHttp);
 				}else if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST ||
 					selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE ) {
-					final String msg = s.substring(s.indexOf("\n\n")+2);
+					final String msg = s.substring(s.indexOf("\r\n\r\n")+4);
 					SwingUtilities.invokeLater(new Runnable() {
 
 						@Override
