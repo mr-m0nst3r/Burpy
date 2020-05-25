@@ -874,7 +874,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
 					selectedItems[0].setRequest(newHttp);
 				} else {
-					final String msg = s.substring(s.indexOf("\r\n\r\n"));
+					final String msg = s.substring(s.indexOf("\r\n\r\n")+4);
 					SwingUtilities.invokeLater(new Runnable() {
 
 						@Override
