@@ -34,6 +34,7 @@ class BridaServicePyro:
             # header is a list, but body is string
             # so we append body to header list
             nheader, nbody = self.burpy.main(header, data)
+            nheader = nheader or list()
             nheader.append("")
             nheader.append(nbody)
             http_str = "\x0d\x0a".join(nheader)
@@ -52,6 +53,7 @@ class BridaServicePyro:
             # header is a list, but body is string
             # so we append body to header list
             nheader, nbody = self.burpy.encrypt(header, data)
+            nheader = nheader or list()
             header.append("")
             nheader.append(nbody)
             http_str = "\x0d\x0a".join(nheader)
