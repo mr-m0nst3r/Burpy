@@ -12,7 +12,7 @@ If you wanna take advantage of the intruder with payloads need to be encrypted, 
 m0nst3r(Song Xinlei) @ CFCA
 
 # TODO
-- [x] to python3
+- [x] to python3, from version `1.3`
 - [ ] `dynamic` function transform
 
 # Changelog
