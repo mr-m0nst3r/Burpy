@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>me.m0nst3r</groupId>
   <artifactId>burpy</artifactId>
-  <version>1.2.5-SNAPSHOT</version>
+  <version>1.3-SNAPSHOT</version>
   <name>burpy</name>
   <description>burp plugin to run custom python</description>
   <properties>

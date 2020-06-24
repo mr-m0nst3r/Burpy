@@ -12,7 +12,8 @@ If you wanna take advantage of the intruder with payloads need to be encrypted, 
 m0nst3r(Song Xinlei) @ CFCA
 
 # TODO
-- to python3
+- [x]to python3
+- [ ]`dynamic` function transform
 
 # Changelog
 - change to use class instead of pure function, so that we can init webdriver+selenium when loading without init it per call
@@ -33,14 +34,16 @@ m0nst3r(Song Xinlei) @ CFCA
 5. use `Burpy Main`/`Burpy Enc`/`Burpy Dec`/`Burpy Sign` context memu to invoke your script
 6. write own payload processor, especially usefull with enc/dec
 
+> Install editor plugin example: mvn install:install-file -DgroupId=com.fifesoft -DartifactId=rsyntaxtextarea -Dversion=2.6.1.edited -Dpackaging=jar -Dfile=/home/m0nst3r/study/java/rsyntaxtextarea-2.6.1.edited.jar
+
 # the python script sample
 Just write your own logic to modify the header/body as your need, and return the header/body, just that simple!
 Note: if you need to handle response data, e.g decrypt response, you may want to write if-else, because in some cases, the response is different with the request. For example, the request is `encrypted=XXXXXX`, but the response is `XXXXXX`, without `encrypted`. 
 ```python
 class Burpy:
     '''
-    header is list, append as your need
-    body is string, modify as your need
+    header is dict
+    body is string
     '''
     def __init__(self):
         '''
@@ -52,7 +55,7 @@ class Burpy:
         return header, body
     
     def encrypt(self, header, body):
-        header.append("Enc: AAA")
+        header["Cookie"] = "admin=1"
         return header, body
 
     def decrypt(self, header, body):
@@ -64,7 +67,7 @@ class Burpy:
         return header, body
 
     def sign(self, header, body):
-        header.append("Sign: AAA")
+        header.update({"Sign":"123123123"})
         return header, body
 
     def processor(self, payload):

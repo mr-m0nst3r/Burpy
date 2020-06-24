@@ -151,10 +151,10 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		lastPrintIsJS = false;
 
 		try {
-			InputStream inputStream = getClass().getClassLoader().getResourceAsStream("res/burpyServicePyro.py");
+			InputStream inputStream = getClass().getClassLoader().getResourceAsStream("res/burpyServicePyro2.py");
 			printSuccessMessage("got inputStream");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream ));
-			File outputFile = new File(System.getProperty("java.io.tmpdir") + System.getProperty("file.separator") + "burpyServicePyro.py");
+			File outputFile = new File(System.getProperty("java.io.tmpdir") + System.getProperty("file.separator") + "burpyServicePyro2.py");
 
 			FileWriter fr = new FileWriter(outputFile);
 			BufferedWriter br  = new BufferedWriter(fr);
@@ -598,6 +598,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 		String[] startServerCommand = {pythonPath,"-i",pyroServicePath,pyroHost.getText().trim(),pyroPort.getText().trim(),burpyPath.getText().trim()};
 
+
 		try {
 			documentServerStatus.insertString(0, "starting up ... ", redStyle);
 			pyroServerProcess = rt.exec(startServerCommand);
@@ -842,59 +843,37 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		} else if(command.equals("contextcustom1")) {
 
 			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
-			int[] selectedBounds = currentInvocation.getSelectionBounds();
 			byte selectedInvocationContext = currentInvocation.getInvocationContext();
-			String s = null;
-			byte[] newHttp = null;
-			List<String> headers = null;
-			byte[] body = null;
 
 			try {
-
+				// pass directly the bytes of http
 				byte[] selectedRequestOrResponse = null;
-				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST ||
-						selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
 					selectedRequestOrResponse = selectedItems[0].getRequest();
-					IRequestInfo requestInfo = helpers.analyzeRequest(selectedRequestOrResponse);
-					headers = new ArrayList<String>(requestInfo.getHeaders());
-					String requestStr = new String(selectedRequestOrResponse);
-					body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
-
 				} else {
 					selectedRequestOrResponse = selectedItems[0].getResponse();
-					IResponseInfo responseInfo = helpers.analyzeResponse(selectedRequestOrResponse);
-					headers = responseInfo.getHeaders();
-					String responseStr = new String(selectedRequestOrResponse);
-//					headers = new ArrayList();
-//					headers.add("RESPONSE");
-					body = responseStr.substring(responseInfo.getBodyOffset()).getBytes();
 				}
-
-				s = (String)pyroBurpyService.call("hello", headers, new String[]{byteArrayToHexString(body)});
-
-
-				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
-					selectedItems[0].setRequest(newHttp);
-				}else if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST ||
-						selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE ) {
-					final String msg = s.substring(s.indexOf("\r\n\r\n")+4);
+				
+				String ret_str = (String) pyroBurpyService.call("hello", helpers.base64Encode(selectedRequestOrResponse));
+				
+				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					selectedItems[0].setRequest(ret_str.getBytes());
+				} else {
+					
+					final String msg = ret_str.substring(ret_str.indexOf("\r\n\r\n")+4);
 					SwingUtilities.invokeLater(new Runnable() {
-
+						
 						@Override
 						public void run() {
-
 							JTextArea ta = new JTextArea(10, 30);
 							ta.setText(msg);
-							ta.setWrapStyleWord(true);
 							ta.setLineWrap(true);
+							ta.setWrapStyleWord(true);
 							ta.setCaretPosition(0);
 							ta.setEditable(false);
-
-							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy Main", JOptionPane.INFORMATION_MESSAGE);
-
+							
+							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy Enc", JOptionPane.INFORMATION_MESSAGE);
 						}
-
 					});
 				}
 
@@ -905,52 +884,37 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			}
 		}else if (command.equals("encrypt")) {
 			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
-			int[] selectedBounds = currentInvocation.getSelectionBounds();
 			byte selectedInvocationContext = currentInvocation.getInvocationContext();
-			String s = null;
-			byte[] newHttp = null;
-			List<String> headers = null;
-			byte[] body = null;
 
 			try {
+				// pass directly the bytes of http
 				byte[] selectedRequestOrResponse = null;
-				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
 					selectedRequestOrResponse = selectedItems[0].getRequest();
-					IRequestInfo requestInfo = helpers.analyzeRequest(selectedRequestOrResponse);
-					headers = new ArrayList<String>(requestInfo.getHeaders());
-					String requestStr = new String(selectedRequestOrResponse);
-//					printSuccessMessage(requestStr.substring(requestInfo.getBodyOffset()));
-					body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
-
 				} else {
 					selectedRequestOrResponse = selectedItems[0].getResponse();
-					IResponseInfo responseInfo = helpers.analyzeResponse(selectedRequestOrResponse);
-					String responseStr = new String(selectedRequestOrResponse);
-					body = responseStr.substring(responseInfo.getBodyOffset()).getBytes();
 				}
-
-				s = (String)pyroBurpyService.call("encrypt", headers, new String[]{byteArrayToHexString(body)});
-				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
-					selectedItems[0].setRequest(newHttp);
+				
+				String ret_str = (String) pyroBurpyService.call("encrypt", helpers.base64Encode(selectedRequestOrResponse));
+				
+				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					selectedItems[0].setRequest(ret_str.getBytes());
 				} else {
-					final String msg = s.substring(s.indexOf("\r\n\r\n")+4);
+					
+					final String msg = ret_str.substring(ret_str.indexOf("\r\n\r\n")+4);
 					SwingUtilities.invokeLater(new Runnable() {
-
+						
 						@Override
 						public void run() {
-
 							JTextArea ta = new JTextArea(10, 30);
 							ta.setText(msg);
-							ta.setWrapStyleWord(true);
 							ta.setLineWrap(true);
+							ta.setWrapStyleWord(true);
 							ta.setCaretPosition(0);
 							ta.setEditable(false);
-
+							
 							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy Enc", JOptionPane.INFORMATION_MESSAGE);
-
 						}
-
 					});
 				}
 
@@ -962,59 +926,37 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		}else if (command.equals("decrypt")) {
 
 			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
-			int[] selectedBounds = currentInvocation.getSelectionBounds();
 			byte selectedInvocationContext = currentInvocation.getInvocationContext();
-			String s = null;
-			byte[] newHttp = null;
-			List<String> headers = null;
-			byte[] body = null;
 
 			try {
-
+				// pass directly the bytes of http
 				byte[] selectedRequestOrResponse = null;
-				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST ||
-						selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
 					selectedRequestOrResponse = selectedItems[0].getRequest();
-					IRequestInfo requestInfo = helpers.analyzeRequest(selectedRequestOrResponse);
-					headers = new ArrayList<String>(requestInfo.getHeaders());
-					String requestStr = new String(selectedRequestOrResponse);
-					body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
-
 				} else {
 					selectedRequestOrResponse = selectedItems[0].getResponse();
-					IResponseInfo responseInfo = helpers.analyzeResponse(selectedRequestOrResponse);
-					headers = responseInfo.getHeaders();
-					String responseStr = new String(selectedRequestOrResponse);
-//					headers = new ArrayList();
-//					headers.add("RESPONSE");
-					body = responseStr.substring(responseInfo.getBodyOffset()).getBytes();
 				}
-
-				s = (String)pyroBurpyService.call("decrypt", headers, new String[]{byteArrayToHexString(body)});
-
-
-				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
-					selectedItems[0].setRequest(newHttp);
-				}else if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST ||
-					selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE ) {
-					final String msg = s.substring(s.indexOf("\r\n\r\n")+4);
+				
+				String ret_str = (String) pyroBurpyService.call("decrypt", helpers.base64Encode(selectedRequestOrResponse));
+				
+				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					selectedItems[0].setRequest(ret_str.getBytes());
+				} else {
+					
+					final String msg = ret_str.substring(ret_str.indexOf("\r\n\r\n")+4);
 					SwingUtilities.invokeLater(new Runnable() {
-
+						
 						@Override
 						public void run() {
-
 							JTextArea ta = new JTextArea(10, 30);
 							ta.setText(msg);
-							ta.setWrapStyleWord(true);
 							ta.setLineWrap(true);
+							ta.setWrapStyleWord(true);
 							ta.setCaretPosition(0);
 							ta.setEditable(false);
-
+							
 							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy Dec", JOptionPane.INFORMATION_MESSAGE);
-
 						}
-
 					});
 				}
 
@@ -1026,55 +968,37 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		}else if (command.equals("sign")) {
 
 			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
-			int[] selectedBounds = currentInvocation.getSelectionBounds();
 			byte selectedInvocationContext = currentInvocation.getInvocationContext();
-			String s = null;
-			byte[] newHttp = null;
-			List<String> headers = null;
-			byte[] body = null;
 
 			try {
-
+				// pass directly the bytes of http
 				byte[] selectedRequestOrResponse = null;
-				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
 					selectedRequestOrResponse = selectedItems[0].getRequest();
-					IRequestInfo requestInfo = helpers.analyzeRequest(selectedRequestOrResponse);
-					headers = new ArrayList<String>(requestInfo.getHeaders());
-					String requestStr = new String(selectedRequestOrResponse);
-					body = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
-
 				} else {
 					selectedRequestOrResponse = selectedItems[0].getResponse();
-					IResponseInfo responseInfo = helpers.analyzeResponse(selectedRequestOrResponse);
-					String responseStr = new String(selectedRequestOrResponse);
-					body = responseStr.substring(responseInfo.getBodyOffset()).getBytes();
 				}
-
-				s = (String)pyroBurpyService.call("sign", headers, new String[]{byteArrayToHexString(body)});
-
-
-				// Todo: set request/response accordingly and other commands
-				if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					newHttp = ArrayUtils.addAll(hexStringToByteArray(strToHexStr(s)));
-					selectedItems[0].setRequest(newHttp);
+				
+				String ret_str = (String) pyroBurpyService.call("sign", helpers.base64Encode(selectedRequestOrResponse));
+				
+				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+					selectedItems[0].setRequest(ret_str.getBytes());
 				} else {
-					final String msg = s;//.substring(("RESPONSE").length()+2);
+					
+					final String msg = ret_str.substring(ret_str.indexOf("\r\n\r\n")+4);
 					SwingUtilities.invokeLater(new Runnable() {
-
+						
 						@Override
 						public void run() {
-
 							JTextArea ta = new JTextArea(10, 30);
 							ta.setText(msg);
-							ta.setWrapStyleWord(true);
 							ta.setLineWrap(true);
+							ta.setWrapStyleWord(true);
 							ta.setCaretPosition(0);
 							ta.setEditable(false);
-
-							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy Sign", JOptionPane.INFORMATION_MESSAGE);
-
+							
+							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy Dec", JOptionPane.INFORMATION_MESSAGE);
 						}
-
 					});
 				}
 
@@ -1514,25 +1438,15 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 //					itemEnc.doClick();
 					// Get request bytes
 					byte[] request = messageInfo.getRequest();
-					// Get a IRequestInfo object, useful to work with the request
-					IRequestInfo requestInfo = helpers.analyzeRequest(request);
-					// Get the headers
-					headers = requestInfo.getHeaders();
-					// Get "test" parameter
-					//IParameter contentParameter = helpers.getRequestParameter(request, "content");
-					// Get body
-					String requestStr = new String(request);
-					int bodyOffset = requestInfo.getBodyOffset();
-					byte[] body = requestStr.substring(bodyOffset).getBytes();
-//					String ret = "";
-					if(body != null) {
+					
+
 						//String urlDecodedContentParameterValue = helpers.urlDecode(contentParameter.getValue());
 						String ret = "";
 //						String pyroUrl = "PYRO:BridaServicePyro@localhost:19999";
 						try {
 							PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
 
-							ret = (String)pyroBurpyService.call("encrypt", headers, new String[]{byteArrayToHexString(body)});
+							ret = (String) pyroBurpyService.call("encrypt", helpers.base64Encode(request));
 
 							pp.close();
 						} catch(Exception e) {
@@ -1556,55 +1470,43 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 						// Update the messageInfo object with the modified request (otherwise the request remains the old one)
 
 						messageInfo.setRequest(newRequest);
-					}
+
 				}else {
-//					itemDec.doClick();
-					// Get request bytes
-					byte[] request = messageInfo.getRequest();
-					// Get a IRequestInfo object, useful to work with the request
-					IRequestInfo requestInfo = helpers.analyzeRequest(request);
-					// Get "test" parameter
-					//IParameter contentParameter = helpers.getRequestParameter(request, "content");
-					// Get body
-					String requestStr = new String(request);
 
-					byte[] reqbody = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
-					if(reqbody != null) {
+//					byte[] request = messageInfo.getRequest();
+//
+//					IRequestInfo requestInfo = helpers.analyzeRequest(request);
+//
+//					String requestStr = new String(request);
+//
+//					byte[] reqbody = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
+//					if(reqbody != null) {
 						// Get response bytes
-						byte[] response = messageInfo.getResponse();
-						String responseStr = new String(response);
-						// Get a IResponseInfo object, useful to work with the request
-						IResponseInfo responseInfo = helpers.analyzeResponse(response);
-						List<String> responseHeaders = responseInfo.getHeaders();
-						// Get the offset of the body
-						int bodyOffset = responseInfo.getBodyOffset();
-						// Get the body (byte array and String)
-//						byte[] body = Arrays.copyOfRange(response, bodyOffset, response.length);
-						byte[] body = responseStr.substring(bodyOffset).getBytes();
-//						String bodyString = helpers.bytesToString(body);
-						String ret = "";
-//						String pyroUrl = "PYRO:BridaServicePyro@localhost:19999";
-						try {
-							PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
-							ret = (String)pyroBurpyService.call("decrypt", responseHeaders, new String[]{byteArrayToHexString(body)});
+					byte[] response = messageInfo.getResponse();
+					
+					String ret = "";
+					try {
+						PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
+						ret = (String) pyroBurpyService.call("encrypt", helpers.base64Encode(response));
 
-							stderr.println(ret);
-							pp.close();
-						} catch(Exception e) {
-							stderr.println(e.toString());
-							StackTraceElement[] exceptionElements = e.getStackTrace();
-							for(int i=0; i< exceptionElements.length; i++) {
-								stderr.println(exceptionElements[i].toString());
-							}
+						stderr.println(ret);
+						pp.close();
+					} catch(Exception e) {
+						stderr.println(e.toString());
+						StackTraceElement[] exceptionElements = e.getStackTrace();
+						for(int i=0; i< exceptionElements.length; i++) {
+							stderr.println(exceptionElements[i].toString());
 						}
-						// Update the messageInfo object with the modified request (otherwise the request remains the old one)
-//						byte[] newResponse = ArrayUtils.addAll(Arrays.copyOfRange(response, 0, bodyOffset),ret.getBytes());
-						IResponseInfo nresInfo = helpers.analyzeResponse(ret.getBytes());
-						int nbodyOff = nresInfo.getBodyOffset();
-						byte[] nbody = ret.substring(nbodyOff).getBytes();
-						byte[] newResponse = helpers.buildHttpMessage(responseHeaders, nbody);
-						messageInfo.setResponse(newResponse);
 					}
+					// Update the messageInfo object with the modified request (otherwise the request remains the old one)
+//						byte[] newResponse = ArrayUtils.addAll(Arrays.copyOfRange(response, 0, bodyOffset),ret.getBytes());
+					IResponseInfo nresInfo = helpers.analyzeResponse(ret.getBytes());
+					int nbodyOff = nresInfo.getBodyOffset();
+					byte[] nbody = ret.substring(nbodyOff).getBytes();
+					headers = nresInfo.getHeaders();
+					byte[] newResponse = helpers.buildHttpMessage(headers, nbody);
+					messageInfo.setResponse(newResponse);
+//					}
 				}
 
 			}
