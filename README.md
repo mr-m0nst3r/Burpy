@@ -12,8 +12,8 @@ If you wanna take advantage of the intruder with payloads need to be encrypted, 
 m0nst3r(Song Xinlei) @ CFCA
 
 # TODO
-- [x]to python3
-- [ ]`dynamic` function transform
+- [x] to python3
+- [ ] `dynamic` function transform
 
 # Changelog
 - change to use class instead of pure function, so that we can init webdriver+selenium when loading without init it per call
