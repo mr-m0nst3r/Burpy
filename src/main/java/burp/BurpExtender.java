@@ -19,7 +19,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.swing.*;
-import javax.swing.JCheckBox;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.text.BadLocationException;
@@ -61,22 +60,13 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	private JTextPane serverStatus;
 
 	private JTextField burpyPath;
-	private JCheckBox chckbxNewCheckBox;
 
-	private JCheckBox chckbxEnc;
-	private JCheckBox chckbxDec;
-	private JCheckBox chckbxSign;
 	private JCheckBox chckbxPro;
 	private JCheckBox chckbxAuto;
 
 	public JMenuItem itemEnc;
 	public JMenuItem itemDec;
 
-	public Boolean isAutoMain = false;
-	public Boolean should_cus = false;
-	public Boolean should_enc = false;
-	public Boolean should_dec = false;
-	public Boolean should_sign = false;
 	public Boolean should_pro = false;
 	public Boolean should_auto = false;
 
@@ -92,11 +82,9 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 
 	private boolean serverStarted;
-	private boolean applicationSpawned;
-	private IContextMenuInvocation currentInvocation;
-	private ITextEditor currentTextEditor;
 
-	private ITextEditor stubTextEditor;
+	private IContextMenuInvocation currentInvocation;
+
 
 
 	private JButton loadPyFileButton;
@@ -113,10 +101,11 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	private Thread stderrThread;
 
 
-	private JTree tree;
 
 
 	private boolean lastPrintIsJS;
+
+	public List<String> burpyMethods;
 
 	public void registerExtenderCallbacks(IBurpExtenderCallbacks c) {
 
@@ -151,8 +140,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		lastPrintIsJS = false;
 
 		try {
-			InputStream inputStream = getClass().getClassLoader().getResourceAsStream("res/burpyServicePyro2.py");
-			printSuccessMessage("got inputStream");
+			InputStream inputStream = getClass().getClassLoader().getResourceAsStream("res/burpyServicePyro3.py");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream ));
 			File outputFile = new File(System.getProperty("java.io.tmpdir") + System.getProperty("file.separator") + "burpyServicePyro2.py");
 
@@ -314,49 +302,8 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				pyroPortPanel.add(labelPyroPort);
 				pyroPortPanel.add(pyroPort);
 
-				// enc function
-				chckbxEnc = new JCheckBox("Enable Encryption");
-				chckbxEnc.setEnabled(true);
-				chckbxEnc.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						if (chckbxEnc.isSelected()){
-							should_enc = true;
-						}else {
-							should_enc = false;
-						}
-					}
-				});
-
-				// dec functioin
-				chckbxDec = new JCheckBox("Enable Decryption");
-				chckbxDec.setEnabled(true);
-				chckbxDec.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						if (chckbxDec.isSelected()){
-							should_dec = true;
-						}else {
-							should_dec = false;
-						}
-					}
-				});
-
-				// sign function
-				chckbxSign = new JCheckBox("Enable Sign");
-				chckbxSign.setEnabled(true);
-				chckbxSign.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						if (chckbxSign.isSelected()){
-							should_sign = true;
-						}else {
-							should_sign = false;
-						}
-					}
-				});
-
-				chckbxPro = new JCheckBox("Enable Processor");
+				
+				chckbxPro = new JCheckBox("Enable Processor (require processor function)");
 				chckbxPro.setEnabled(true);
 				chckbxPro.addActionListener(new ActionListener() {
 					@Override
@@ -369,7 +316,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					}
 				});
 
-				chckbxAuto = new JCheckBox("Enable Auto Enc/Dec");
+				chckbxAuto = new JCheckBox("Enable Auto Enc/Dec (require encrypt and decrypt function)");
 				chckbxAuto.setEnabled(true);
 				chckbxAuto.addActionListener(new ActionListener() {
 					@Override
@@ -389,23 +336,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				autoSignBox.gridx = 1;
 				autoSignBox.gridy = 3;
 
-				GridBagConstraints shouldEncBox = new GridBagConstraints();
-				shouldEncBox.fill = GridBagConstraints.HORIZONTAL;
-				shouldEncBox.insets = new Insets(0, 0, 5, 0);
-				shouldEncBox.gridx = 1;
-				shouldEncBox.gridy = 3;
-
-				GridBagConstraints shouldDecBox = new GridBagConstraints();
-				shouldDecBox.fill = GridBagConstraints.HORIZONTAL;
-				shouldDecBox.insets = new Insets(0, 0, 5, 0);
-				shouldDecBox.gridx = 1;
-				shouldDecBox.gridy = 3;
-
-				GridBagConstraints shouldSignBox = new GridBagConstraints();
-				shouldSignBox.fill = GridBagConstraints.HORIZONTAL;
-				shouldSignBox.insets = new Insets(0, 0, 5, 0);
-				shouldSignBox.gridx = 1;
-				shouldSignBox.gridy = 3;
 
 				GridBagConstraints shouldProBox = new GridBagConstraints();
 				shouldProBox.fill = GridBagConstraints.HORIZONTAL;
@@ -426,9 +356,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				configurationConfPanel.add(pyroPortPanel);
 				configurationConfPanel.add(burpyPathPanel);
 //				configurationConfPanel.add(chckbxNewCheckBox, autoSignBox);
-				configurationConfPanel.add(chckbxEnc, shouldEncBox);
-				configurationConfPanel.add(chckbxDec,shouldDecBox);
-				configurationConfPanel.add(chckbxSign,shouldSignBox);
+
 				configurationConfPanel.add(chckbxPro,shouldProBox);
 				configurationConfPanel.add(chckbxAuto, shouldAutoBox);
 
@@ -483,9 +411,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				killServer.setActionCommand("killServer");
 				killServer.addActionListener(BurpExtender.this);
 
-				JButton spawnApplication = new JButton("Spawn");
-				spawnApplication.setActionCommand("spawnApplication");
-				spawnApplication.addActionListener(BurpExtender.this);
+
 
 				clearConsoleButton = new JButton("Clear console");
 				clearConsoleButton.setActionCommand("clearConsole");
@@ -510,8 +436,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				rightSplitPane.add(serverStatusButtons,gbc);
 				rightSplitPane.add(startServer,gbc);
 				rightSplitPane.add(killServer,gbc);
-				// TODO
-				rightSplitPane.add(spawnApplication,gbc);
+
 
 				rightSplitPane.add(clearConsoleButton,gbc);
 
@@ -591,6 +516,21 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		}
 
 	}
+	
+	@SuppressWarnings("unchecked")
+	public void getMethods() {
+			
+			try {
+				this.burpyMethods = (List<String>) (pyroBurpyService.call("get_methods"));
+			} catch (Exception e) {
+				stderr.println(e.toString());
+				StackTraceElement[] exceptionElements = e.getStackTrace();
+				for (int i = 0; i < exceptionElements.length; i++) {
+					stderr.println(exceptionElements[i].toString());
+				}
+			}
+
+	}
 
 	private void launchPyroServer(String pythonPath, String pyroServicePath) {
 
@@ -644,7 +584,9 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 								printSuccessMessage("Pyro server started correctly");
 								printSuccessMessage("Better use \"Kill Server\" after finished!");
-
+								
+								printSuccessMessage("Analyzing scripts");
+								getMethods();
 								// Standard line
 							} else {
 
@@ -722,36 +664,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		String command = event.getActionCommand();
 
 
-
-		if(command.equals("spawnApplication") && serverStarted) {
-
-			try {
-
-				final String s = (String)(pyroBurpyService.call("hello_spawn"));
-				applicationSpawned = true;
-
-				SwingUtilities.invokeLater(new Runnable() {
-
-					@Override
-					public void run() {
-
-
-						printJSMessage("*** Output " + ":");
-						printJSMessage(s);
-
-					}
-				});
-
-
-			} catch (final Exception e) {
-
-				printException(e,"Exception with spawn application");
-
-			}
-
-
-
-		} else if(command.equals("killServer") && serverStarted) {
+		if(command.equals("killServer") && serverStarted) {
 
 			stdoutThread.stop();
 			stderrThread.stop();
@@ -796,7 +709,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				savePersistentSettings();
 
 				try {
-
+					
 					launchPyroServer(pythonPath.getText().trim(), pythonScript);
 
 				} catch (final Exception e) {
@@ -840,8 +753,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				printException(e,"Error saving PY file");
 			}
 
-		} else if(command.equals("contextcustom1")) {
-
+		} else if (burpyMethods.contains(command)) {
 			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
 			byte selectedInvocationContext = currentInvocation.getInvocationContext();
 
@@ -854,7 +766,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					selectedRequestOrResponse = selectedItems[0].getResponse();
 				}
 				
-				String ret_str = (String) pyroBurpyService.call("hello", helpers.base64Encode(selectedRequestOrResponse));
+				String ret_str = (String) pyroBurpyService.call("invoke_method", command, helpers.base64Encode(selectedRequestOrResponse));
 				
 				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
 					selectedItems[0].setRequest(ret_str.getBytes());
@@ -872,7 +784,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 							ta.setCaretPosition(0);
 							ta.setEditable(false);
 							
-							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy Enc", JOptionPane.INFORMATION_MESSAGE);
+							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy "+command, JOptionPane.INFORMATION_MESSAGE);
 						}
 					});
 				}
@@ -882,132 +794,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				printException(e, "Exception with custom context application");
 
 			}
-		}else if (command.equals("encrypt")) {
-			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
-			byte selectedInvocationContext = currentInvocation.getInvocationContext();
-
-			try {
-				// pass directly the bytes of http
-				byte[] selectedRequestOrResponse = null;
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					selectedRequestOrResponse = selectedItems[0].getRequest();
-				} else {
-					selectedRequestOrResponse = selectedItems[0].getResponse();
-				}
-				
-				String ret_str = (String) pyroBurpyService.call("encrypt", helpers.base64Encode(selectedRequestOrResponse));
-				
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					selectedItems[0].setRequest(ret_str.getBytes());
-				} else {
-					
-					final String msg = ret_str.substring(ret_str.indexOf("\r\n\r\n")+4);
-					SwingUtilities.invokeLater(new Runnable() {
-						
-						@Override
-						public void run() {
-							JTextArea ta = new JTextArea(10, 30);
-							ta.setText(msg);
-							ta.setLineWrap(true);
-							ta.setWrapStyleWord(true);
-							ta.setCaretPosition(0);
-							ta.setEditable(false);
-							
-							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy Enc", JOptionPane.INFORMATION_MESSAGE);
-						}
-					});
-				}
-
-			} catch (Exception e) {
-
-				printException(e, "Exception with custom context application");
-
-			}
-		}else if (command.equals("decrypt")) {
-
-			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
-			byte selectedInvocationContext = currentInvocation.getInvocationContext();
-
-			try {
-				// pass directly the bytes of http
-				byte[] selectedRequestOrResponse = null;
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					selectedRequestOrResponse = selectedItems[0].getRequest();
-				} else {
-					selectedRequestOrResponse = selectedItems[0].getResponse();
-				}
-				
-				String ret_str = (String) pyroBurpyService.call("decrypt", helpers.base64Encode(selectedRequestOrResponse));
-				
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					selectedItems[0].setRequest(ret_str.getBytes());
-				} else {
-					
-					final String msg = ret_str.substring(ret_str.indexOf("\r\n\r\n")+4);
-					SwingUtilities.invokeLater(new Runnable() {
-						
-						@Override
-						public void run() {
-							JTextArea ta = new JTextArea(10, 30);
-							ta.setText(msg);
-							ta.setLineWrap(true);
-							ta.setWrapStyleWord(true);
-							ta.setCaretPosition(0);
-							ta.setEditable(false);
-							
-							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy Dec", JOptionPane.INFORMATION_MESSAGE);
-						}
-					});
-				}
-
-			} catch (Exception e) {
-
-				printException(e, "Exception with custom context application");
-
-			}
-		}else if (command.equals("sign")) {
-
-			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
-			byte selectedInvocationContext = currentInvocation.getInvocationContext();
-
-			try {
-				// pass directly the bytes of http
-				byte[] selectedRequestOrResponse = null;
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					selectedRequestOrResponse = selectedItems[0].getRequest();
-				} else {
-					selectedRequestOrResponse = selectedItems[0].getResponse();
-				}
-				
-				String ret_str = (String) pyroBurpyService.call("sign", helpers.base64Encode(selectedRequestOrResponse));
-				
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					selectedItems[0].setRequest(ret_str.getBytes());
-				} else {
-					
-					final String msg = ret_str.substring(ret_str.indexOf("\r\n\r\n")+4);
-					SwingUtilities.invokeLater(new Runnable() {
-						
-						@Override
-						public void run() {
-							JTextArea ta = new JTextArea(10, 30);
-							ta.setText(msg);
-							ta.setLineWrap(true);
-							ta.setWrapStyleWord(true);
-							ta.setCaretPosition(0);
-							ta.setEditable(false);
-							
-							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy Dec", JOptionPane.INFORMATION_MESSAGE);
-						}
-					});
-				}
-
-			} catch (Exception e) {
-
-				printException(e, "Exception with custom context application");
-
-			}
-
 		} else if(command.equals("pythonPathSelectFile")) {
 
 			JFrame parentFrame = new JFrame();
@@ -1111,6 +897,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			try {
 
 				launchPyroServer(pythonPath.getText().trim(),pythonScript);
+				getMethods();
 
 			} catch (final Exception e) {
 
@@ -1124,76 +911,20 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 	public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
 
-		if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST ||
-				invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_RESPONSE) {
-
 			currentInvocation = invocation;
 
 			List<JMenuItem> menu = new ArrayList<JMenuItem>();
 
-			JMenuItem itemCustom1 = new JMenuItem("Burpy Main");
-			itemCustom1.setActionCommand("contextcustom1");
-			itemCustom1.addActionListener(this);
 
-			itemEnc = new JMenuItem("Burpy Enc");
-			itemEnc.setActionCommand("encrypt");
-			itemEnc.addActionListener(this);
-
-			itemDec = new JMenuItem("Burpy Dec");
-			itemDec.setActionCommand("decrypt");
-			itemDec.addActionListener(this);
-
-			JMenuItem itemSign = new JMenuItem("Burpy Sign");
-			itemSign.setActionCommand("sign");
-			itemSign.addActionListener(this);
-
-			menu.add(itemCustom1);
-			if (should_enc) {
-				menu.add(itemEnc);
-			}
-
-			if (should_dec) {
-				menu.add(itemDec);
-			}
-
-			if (should_sign) {
-				menu.add(itemSign);
-			}
-			return menu;
-
-		} else if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST ||
-				invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
-
-			currentInvocation = invocation;
-
-			List<JMenuItem> menu = new ArrayList<JMenuItem>();
-
-			JMenuItem itemCustom1 = new JMenuItem("Burpy Main");
-			itemCustom1.setActionCommand("contextcustom1");
-			itemCustom1.addActionListener(this);
-
-
-
-			JMenuItem itemDec = new JMenuItem("Burpy Dec");
-			itemDec.setActionCommand("decrypt");
-			itemDec.addActionListener(this);
-
-
-
-			menu.add(itemCustom1);
-
-			if (should_dec) {
-				menu.add(itemDec);
-			}
+			
+			this.burpyMethods.forEach(method_name -> {
+				JMenuItem item = new JMenuItem("Burpy " + method_name);
+				item.setActionCommand(method_name);
+				item.addActionListener(this);
+				menu.add(item);
+			});
 
 			return menu;
-
-
-		} else {
-
-			return null;
-
-		}
 
 	}
 
@@ -1411,7 +1142,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			
 			try {
 				PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
-				final String s = (String) (pyroBurpyService.call("processor", new String(currentPayload)));
+				final String s = (String) (pyroBurpyService.call("invoke_method", "processor", new String(currentPayload)));
 				ret = s.getBytes();
 				pp.close();
 			} catch (Exception e) {
@@ -1446,7 +1177,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 						try {
 							PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
 
-							ret = (String) pyroBurpyService.call("encrypt", helpers.base64Encode(request));
+							ret = (String) pyroBurpyService.call("invoke_method", "encrypt", helpers.base64Encode(request));
 
 							pp.close();
 						} catch(Exception e) {
@@ -1487,7 +1218,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					String ret = "";
 					try {
 						PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
-						ret = (String) pyroBurpyService.call("encrypt", helpers.base64Encode(response));
+						ret = (String) pyroBurpyService.call("invoke_method", "decrypt", helpers.base64Encode(response));
 
 						stderr.println(ret);
 						pp.close();

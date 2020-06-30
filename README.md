@@ -13,7 +13,7 @@ m0nst3r(Song Xinlei) @ CFCA
 
 # TODO
 - [x] to python3, from version `1.3`
-- [ ] `dynamic` function transform
+- [x] `dynamic` function transform
 
 # Changelog
 - change to use class instead of pure function, so that we can init webdriver+selenium when loading without init it per call
@@ -21,8 +21,74 @@ m0nst3r(Song Xinlei) @ CFCA
 - add payload processor
 - add auto enc/dec. encrypt function automatically called when you click GO in burp, and decrypt function automatically called when receive response
 - changed default pyro4 port, avoiding brida conflicts
+- migration to python3
+- dynamic context menu items extracted from your python script
 
-# Usage
+# Usage (`=v2.0`)
+> NOTE: MAKE SURE YOU HAVE ALL DEPENDENCIES INSTALLED, INCLUDING THE DEPENDENCIES NEEDED FOR YOUR PYTHON SCRIPT
+
+1. install PyRO, version 4 is used.
+2. configure python and pyro settings
+3. configure the python file you wanna run
+4. click "Start server", burpy will read your python script file and get all functions to generate the context menu
+5. use context memu item to invoke your script's regarding function
+6. write own payload processor, especially usefull with enc/dec
+
+> Install editor plugin example: mvn install:install-file -DgroupId=com.fifesoft -DartifactId=rsyntaxtextarea -Dversion=2.6.1.edited -Dpackaging=jar -Dfile=/home/m0nst3r/study/java/rsyntaxtextarea-2.6.1.edited.jar
+
+# the python script sample
+Just write your own logic to modify the header/body as your need, and return the header/body, just that simple!
+
+All functions will be extracted to generate context menu, except thos with `_`, `__`, `main` prefix!
+
+```python
+class Burpy:
+    '''
+    header is dict
+    body is string
+    '''
+    def __init__(self):
+        '''
+        here goes some code that will be kept since "start server" clicked, for example, webdriver, which usually takes long time to init
+        '''
+        pass
+        
+    def main(self, header, body):
+        return header, body
+
+    def _test(self, param):
+        '''
+        function with `_`, `__`, `main` as starting letter will be ignored for context menu
+
+        '''
+        # param = magic(param)
+        return param
+    
+    def encrypt(self, header, body):
+        '''
+        Auto Enc/Dec feature require this function
+        '''
+        header["Cookie"] = "admin=1"
+        return header, body
+
+    def decrypt(self, header, body):
+        '''
+        Auto Enc/Dec feature require this function
+
+        '''
+        # header = magic(header)
+        # body = magic(body)
+        return header, body
+
+    def processor(self, payload):
+        '''
+        Enable Processor feature require this function
+        payload processor function
+        '''
+        return payload+"123"
+```
+
+# Usage (`<v2.0`)
 
 > check the examples for scripts
 > NOTE: MAKE SURE YOU HAVE ALL DEPENDENCIES INSTALLED, INCLUDING THE DEPENDENCIES NEEDED FOR YOUR PYTHON SCRIPT
