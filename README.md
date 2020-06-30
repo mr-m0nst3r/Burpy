@@ -4,7 +4,7 @@ A plugin that allows you execute python and get return to BurpSuite.
 # Intro
 During Android APP pentesting, I found it very often that the traffic is encrypted and/or signed, it would be great to have a plugin so we can write python to enc/dec/sign.
 
-And, sometimes, you may just want some customized function to modify part of the traffic, all you need is just `Burpy Main`.
+And, sometimes, you may just want some customized function to modify part of the traffic, all you need is just write a python script and directly call it from within burpsuite.
 
 If you wanna take advantage of the intruder with payloads need to be encrypted, you need to `Enable Processor`, and write your own payload processor function.
 
@@ -39,7 +39,7 @@ m0nst3r(Song Xinlei) @ CFCA
 # the python script sample
 Just write your own logic to modify the header/body as your need, and return the header/body, just that simple!
 
-All functions will be extracted to generate context menu, except thos with `_`, `__`, `main` prefix!
+All functions will be extracted to generate context menu, except thos with `_`, `__`prefix!
 
 ```python
 class Burpy:
@@ -58,7 +58,7 @@ class Burpy:
 
     def _test(self, param):
         '''
-        function with `_`, `__`, `main` as starting letter will be ignored for context menu
+        function with `_`, `__`as starting letter will be ignored for context menu
 
         '''
         # param = magic(param)
