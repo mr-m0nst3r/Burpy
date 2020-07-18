@@ -23,6 +23,7 @@ m0nst3r(Song Xinlei) @ CFCA
 - changed default pyro4 port, avoiding brida conflicts
 - migration to python3
 - dynamic context menu items extracted from your python script
+- add `first_line` variable to `header` dict
 
 # Usage (`=v2.0`)
 > NOTE: MAKE SURE YOU HAVE ALL DEPENDENCIES INSTALLED, INCLUDING THE DEPENDENCIES NEEDED FOR YOUR PYTHON SCRIPT
@@ -40,6 +41,8 @@ m0nst3r(Song Xinlei) @ CFCA
 Just write your own logic to modify the header/body as your need, and return the header/body, just that simple!
 
 All functions will be extracted to generate context menu, except thos with `_`, `__`prefix!
+
+> Note: header["first_line"] ==> `GET /XXX/yyy.php?param1=hello HTTP/1.1`.
 
 ```python
 class Burpy:

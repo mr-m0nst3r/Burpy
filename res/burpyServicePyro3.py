@@ -34,7 +34,7 @@ class http:
     
     def parse_headers_and_body(self,s):
         try:
-            crlfcrlf = b"\x0d\x0a\x0d\x0a"
+            crlfcrlf = "\r\n\r\n".encode('utf-8')
             crlfcrlfIndex = s.find(crlfcrlf)
             headers = s[:crlfcrlfIndex + len(crlfcrlf)].decode("utf-8")
             body = s[crlfcrlfIndex + len(crlfcrlf):]
@@ -52,7 +52,8 @@ class http:
         # if(isRequest):
             # get headers as dict
         newhttp = list()
-        newhttp.append(self.first_line)
+        first_line = self.headers.pop("first_line")
+        newhttp.append(first_line)
         for k in self.headers.keys():
             newhttp.append("{}: {}".format(k,self.headers[k]))
 
@@ -91,7 +92,7 @@ class BridaServicePyro:
 
     def invoke_method(self,method_name, data):
         data = http(b64d(data))
-
+        data.headers.update({"first_line":data.first_line})
         func = getattr(self.burpy, method_name)
         if data is None:
             return "Parse HTTP data failed"
