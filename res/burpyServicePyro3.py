@@ -1,6 +1,8 @@
 #coding:utf-8
 import Pyro4
 import sys
+from imp import reload
+reload(sys)
 
 m_module = sys.argv[-1]
 
@@ -81,11 +83,11 @@ class Unbuffered(object):
        return getattr(self.stream, attr)
 
 @Pyro4.expose
-class BridaServicePyro:
+class BurpyServicePyro:
     def __init__(self, daemon):
         self.daemon = daemon
         self.burpy = b.Burpy()
-        self.method_list = [func for func in dir(b.Burpy) if callable(getattr(b.Burpy, func)) and not func.startswith("__") and not func.startswith("_")]
+        self.method_list = [func for func in dir(b.Burpy) if callable(getattr(b.Burpy, func)) and not func.startswith("__") and not func.startswith("_") and not func=="processor"]
     
     def get_methods(self):
         return self.method_list
@@ -129,7 +131,7 @@ port = int(sys.argv[2])
 daemon = Pyro4.Daemon(host=host,port=port)
 
 #daemon = Pyro4.Daemon(host='127.0.0.1',port=9999)
-bs = BridaServicePyro(daemon)
+bs = BurpyServicePyro(daemon)
 uri = daemon.register(bs,objectId='BurpyServicePyro')
 
 print("Ready.")
