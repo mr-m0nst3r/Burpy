@@ -93,14 +93,15 @@ class BurpyServicePyro:
         return self.method_list
 
     def invoke_method(self,method_name, data):
-        data = http(b64d(data))
-        data.headers.update({"first_line":data.first_line})
         func = getattr(self.burpy, method_name)
         if data is None:
             return "Parse HTTP data failed"
         try:
             # headers is dict, body is str
             if func.__name__ != "processor":
+                #fix processor bug
+                data = http(b64d(data))
+                data.headers.update({"first_line":data.first_line}) 
                 data.headers, data.body = func(data.headers, data.body)
                 ret_val = data.build()
             else:
