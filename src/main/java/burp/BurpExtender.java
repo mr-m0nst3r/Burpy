@@ -142,7 +142,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		try {
 			InputStream inputStream = getClass().getClassLoader().getResourceAsStream("res/burpyServicePyro3.py");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream ));
-			File outputFile = new File(System.getProperty("java.io.tmpdir") + System.getProperty("file.separator") + "burpyServicePyro2.py");
+			File outputFile = new File(System.getProperty("java.io.tmpdir") + System.getProperty("file.separator") + "burpyServicePyro3.py");
 
 			FileWriter fr = new FileWriter(outputFile);
 			BufferedWriter br  = new BufferedWriter(fr);
