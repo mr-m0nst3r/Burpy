@@ -133,6 +133,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		stderr = new PrintWriter(callbacks.getStderr(), true);
 
 		stdout.println("Github: https://github.com/mr-m0nst3r/Burpy");
+		stdout.println("Website: https://m0nst3r.me");
 		stdout.println("");
 
 		serverStarted = false;
