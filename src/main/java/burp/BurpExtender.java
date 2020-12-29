@@ -760,7 +760,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			try {
 				// pass directly the bytes of http
 				byte[] selectedRequestOrResponse = null;
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
 					selectedRequestOrResponse = selectedItems[0].getRequest();
 				} else {
 					selectedRequestOrResponse = selectedItems[0].getResponse();
@@ -777,13 +777,12 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 						
 						@Override
 						public void run() {
-							JTextArea ta = new JTextArea(10, 30);
-							ta.setText(msg);
+							JTextArea ta = new JTextArea(20, 60);
 							ta.setLineWrap(true);
+							ta.setText(msg);
 							ta.setWrapStyleWord(true);
 							ta.setCaretPosition(0);
 							ta.setEditable(false);
-							
 							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy "+command, JOptionPane.INFORMATION_MESSAGE);
 						}
 					});
