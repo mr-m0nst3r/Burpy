@@ -27,6 +27,7 @@ import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 
+import burp.ui.MessageDialog;
 import org.apache.commons.lang3.ArrayUtils;
 import org.fife.ui.rsyntaxtextarea.FileLocation;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -107,6 +108,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 	public List<String> burpyMethods;
 
+	@Override
 	public void registerExtenderCallbacks(IBurpExtenderCallbacks c) {
 
 		// Keep a reference to our callbacks object
@@ -639,11 +641,13 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 	}
 
+	@Override
 	public String getTabCaption() {
 
 		return "Burpy";
 	}
 
+	@Override
 	public Component getUiComponent() {
 		return mainPanel;
 	}
@@ -660,6 +664,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 
 
+	@Override
 	public void actionPerformed(ActionEvent event) {
 
 		String command = event.getActionCommand();
@@ -778,13 +783,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 						
 						@Override
 						public void run() {
-							JTextArea ta = new JTextArea(20, 60);
-							ta.setLineWrap(true);
-							ta.setText(msg);
-							ta.setWrapStyleWord(true);
-							ta.setCaretPosition(0);
-							ta.setEditable(false);
-							JOptionPane.showMessageDialog(null, new JScrollPane(ta), "Burpy "+command, JOptionPane.INFORMATION_MESSAGE);
+							MessageDialog.show("Burpy "+command, msg);
 						}
 					});
 				}
@@ -909,6 +908,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 	}
 
+	@Override
 	public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
 
 			currentInvocation = invocation;
@@ -1157,6 +1157,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		return ret;
 	}
 
+	@Override
 	public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
 		List<String> headers = null;
 		String pyroUrl = "PYRO:BridaServicePyro@" + pyroHost.getText() +":" + pyroPort.getText();
