@@ -11,9 +11,16 @@ If you wanna take advantage of the intruder with payloads need to be encrypted, 
 # Author
 m0nst3r(Song Xinlei) @ CFCA
 
+# Contributors with love
+- @Center-Sun
+- @ViCrack
+
 # TODO
 - [x] to python3, from version `1.3`
 - [x] `dynamic` function transform
+- [x] resize and context menu support for popups (@ViCrack)
+- [] Syntax highlight
+- [] word wrap
 
 # Changelog
 - change to use class instead of pure function, so that we can init webdriver+selenium when loading without init it per call
