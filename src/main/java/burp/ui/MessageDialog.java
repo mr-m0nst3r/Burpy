@@ -33,7 +33,7 @@ public class MessageDialog extends JDialog {
         RTextScrollPane scrollPane = new RTextScrollPane(syntaxTextArea);
 
         syntaxTextArea.setText(msg);
-        syntaxTextArea.setLineWrap(false);
+        syntaxTextArea.setLineWrap(true);
         syntaxTextArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         syntaxTextArea.setCaretPosition(0);
         // 设置语法高亮
