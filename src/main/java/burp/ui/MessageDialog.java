@@ -1,12 +1,10 @@
 package burp.ui;
 
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rtextarea.RTextScrollPane;
-
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
+import javax.swing.*;
 
 /**
  * @author ViCrack
@@ -17,7 +15,7 @@ import java.awt.event.ActionListener;
  */
 public class MessageDialog extends JDialog {
 
-    private final RSyntaxTextArea syntaxTextArea = new RSyntaxTextArea();
+    private final JTextArea textArea = new JTextArea();
     private final String title;
     private final String msg;
 
@@ -30,16 +28,39 @@ public class MessageDialog extends JDialog {
     private void init() {
         setTitle(title);
         getContentPane().setLayout(new BorderLayout());
-        RTextScrollPane scrollPane = new RTextScrollPane(syntaxTextArea);
+        JScrollPane scrollPane = new JScrollPane(textArea);
 
-        syntaxTextArea.setText(msg);
-        syntaxTextArea.setLineWrap(false);
-        syntaxTextArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        syntaxTextArea.setCaretPosition(0);
+        textArea.setText(msg);
+        textArea.setLineWrap(false);
+        textArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        textArea.setCaretPosition(0);
         // 设置语法高亮
         //syntaxTextArea.setSyntaxEditingStyle();
 
         JPanel southPanel = new JPanel();
+        JPanel southLeftPanel = new JPanel();
+        JPanel southRightPanel = new JPanel();
+
+        southPanel.setLayout(new BorderLayout());
+        southPanel.add(southLeftPanel, BorderLayout.WEST);
+        southPanel.add(southRightPanel, BorderLayout.EAST);
+
+        FlowLayout flowLayout1 = new FlowLayout();
+        flowLayout1.setAlignment(FlowLayout.LEFT);
+        southLeftPanel.setLayout(flowLayout1);
+        FlowLayout flowLayout2 = new FlowLayout();
+        flowLayout2.setAlignment(FlowLayout.RIGHT);
+        southRightPanel.setLayout(flowLayout2);
+
+        getContentPane().add(southPanel, BorderLayout.SOUTH);
+        JCheckBox chkLineWrap = new JCheckBox("LineWrap");
+        chkLineWrap.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                textArea.setLineWrap(chkLineWrap.isSelected());
+            }
+        });
+        southLeftPanel.add(chkLineWrap);
         JButton btnClose = new JButton();
         btnClose.setText("Close");
         btnClose.addActionListener(new ActionListener() {
@@ -48,13 +69,9 @@ public class MessageDialog extends JDialog {
                 dispose();
             }
         });
-        FlowLayout flowLayout1 = new FlowLayout();
-        southPanel.setLayout(flowLayout1);
-        flowLayout1.setAlignment(FlowLayout.RIGHT);
-        getContentPane().add(southPanel, BorderLayout.SOUTH);
-        southPanel.add(btnClose);
+        southRightPanel.add(btnClose);
         getContentPane().add(scrollPane, BorderLayout.CENTER);
-        scrollPane.setViewportView(syntaxTextArea);
+        scrollPane.setViewportView(textArea);
 
         Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
         int width = (int)screensize.getWidth();
