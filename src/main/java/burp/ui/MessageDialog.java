@@ -34,6 +34,7 @@ public class MessageDialog extends JDialog {
         textArea.setLineWrap(false);
         textArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         textArea.setCaretPosition(0);
+
         // 设置语法高亮
         //syntaxTextArea.setSyntaxEditingStyle();
 
