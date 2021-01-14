@@ -1,7 +1,7 @@
 #coding:utf-8
 import Pyro4
 import sys
-from imp import reload
+from importlib import reload
 reload(sys)
 
 m_module = sys.argv[-1]

@@ -31,7 +31,7 @@ public class MessageDialog extends JDialog {
         JScrollPane scrollPane = new JScrollPane(textArea);
 
         textArea.setText(msg);
-        textArea.setLineWrap(false);
+        textArea.setLineWrap(true);
         textArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         textArea.setCaretPosition(0);
         // 设置语法高亮
@@ -54,6 +54,7 @@ public class MessageDialog extends JDialog {
 
         getContentPane().add(southPanel, BorderLayout.SOUTH);
         JCheckBox chkLineWrap = new JCheckBox("LineWrap");
+        chkLineWrap.setSelected(true);
         chkLineWrap.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
