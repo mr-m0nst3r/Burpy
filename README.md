@@ -21,6 +21,7 @@ m0nst3r(Song Xinlei) @ CFCA
 - [x] resize and context menu support for popups (@ViCrack)
 - [ ] Syntax highlight for popups
 - [x] word wrap for popups
+- [ ] python venv support
 
 # Changelog
 - change to use class instead of pure function, so that we can init webdriver+selenium when loading without init it per call
