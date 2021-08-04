@@ -1,47 +1,24 @@
 package burp;
 
+import burp.ui.MessageDialog;
+import net.razorvine.pyro.PyroProxy;
+import net.razorvine.pyro.PyroURI;
+
+import javax.swing.*;
+import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultStyledDocument;
-import javax.swing.text.Style;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyleContext;
-
-import burp.ui.MessageDialog;
-import org.apache.commons.lang3.ArrayUtils;
-import org.fife.ui.rsyntaxtextarea.FileLocation;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rsyntaxtextarea.TextEditorPane;
-import org.fife.ui.rtextarea.RTextScrollPane;
-
-import net.razorvine.pyro.*;
-
 
 public class BurpExtender implements IBurpExtender, ITab, ActionListener, IContextMenuFactory, MouseListener, IExtensionStateListener, IIntruderPayloadProcessor,IHttpListener {
-
-	public static final int PLATFORM_ANDROID = 0;
-	public static final int PLATFORM_IOS = 1;
-	public static final int PLATFORM_GENERIC = 2;
 
 	private IBurpExtenderCallbacks callbacks;
 	private IExtensionHelpers helpers;
@@ -65,9 +42,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	private JCheckBox chckbxPro;
 	private JCheckBox chckbxAuto;
 
-	public JMenuItem itemEnc;
-	public JMenuItem itemDec;
-
 	public Boolean should_pro = false;
 	public Boolean should_auto = false;
 
@@ -75,7 +49,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	private Style redStyle;
 	private Style greenStyle;
 	DefaultStyledDocument documentServerStatus;
-	DefaultStyledDocument documentApplicationStatus;
 
 	DefaultStyledDocument documentServerStatusButtons;
 	DefaultStyledDocument documentApplicationStatusButtons;
@@ -86,17 +59,10 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 	private IContextMenuInvocation currentInvocation;
 
-
-
-	private JButton loadPyFileButton;
-	private JButton savePyFileButton;
-
 	private JButton clearConsoleButton;
 	private JButton reloadScript;
 
 	private JEditorPane pluginConsoleTextArea;
-
-	private TextEditorPane pyEditorTextArea;
 
 	private Thread stdoutThread;
 	private Thread stderrThread;
@@ -183,21 +149,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 				// Tabbed Pabel
 				final JTabbedPane tabbedPanel = new JTabbedPane();
-				tabbedPanel.addChangeListener(new ChangeListener() {
-					public void stateChanged(ChangeEvent e) {
-
-						SwingUtilities.invokeLater(new Runnable() {
-
-							@Override
-							public void run() {
-
-								showHideButtons(tabbedPanel.getSelectedIndex());
-
-							}
-						});
-
-					}
-				});
 
 				// **** TABS
 
@@ -358,23 +309,14 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				configurationConfPanel.add(pyroHostPanel);
 				configurationConfPanel.add(pyroPortPanel);
 				configurationConfPanel.add(burpyPathPanel);
-//				configurationConfPanel.add(chckbxNewCheckBox, autoSignBox);
 
 				configurationConfPanel.add(chckbxPro,shouldProBox);
 				configurationConfPanel.add(chckbxAuto, shouldAutoBox);
 
 				// **** END CONFIGURATION PANEL
 
-				// **** PY EDITOR PANEL / CONSOLE
-				pyEditorTextArea = new TextEditorPane();
-				pyEditorTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
-				pyEditorTextArea.setCodeFoldingEnabled(false);
-				RTextScrollPane sp = new RTextScrollPane(pyEditorTextArea);
-				pyEditorTextArea.setFocusable(true);
-				// **** END PY EDITOR PANEL / CONSOLE
 
 				tabbedPanel.add("Configurations",configurationConfPanel);
-				tabbedPanel.add("PY Editor",sp);
 
 				// *** CONSOLE
 				pluginConsoleTextArea = new JEditorPane("text/html", "<font color=\"green\"><b>*** Burpy Console ***</b></font><br/><br/>");
@@ -424,15 +366,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				reloadScript.setActionCommand("reloadScript");
 				reloadScript.addActionListener(BurpExtender.this);
 
-				loadPyFileButton = new JButton("Load PY file");
-				loadPyFileButton.setActionCommand("loadPyFile");
-				loadPyFileButton.addActionListener(BurpExtender.this);
-
-				savePyFileButton = new JButton("Save PY file");
-				savePyFileButton.setActionCommand("savePyFile");
-				savePyFileButton.addActionListener(BurpExtender.this);
-
-
 				JSeparator separator = new JSeparator(SwingConstants.HORIZONTAL);
 				separator.setBorder(BorderFactory.createMatteBorder(3, 0, 3, 0, Color.ORANGE));
 
@@ -446,11 +379,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				rightSplitPane.add(reloadScript,gbc);
 
 				rightSplitPane.add(separator,gbc);
-
-
-				// TAB PY EDITOR
-				rightSplitPane.add(loadPyFileButton,gbc);
-				rightSplitPane.add(savePyFileButton,gbc);
 
 
 				splitPane.setLeftComponent(consoleTabbedSplitPane);
@@ -468,55 +396,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 		});
 		callbacks.registerHttpListener(this);
-
-	}
-
-
-
-	private void showHideButtons(int indexTabbedPanel) {
-
-		switch(indexTabbedPanel) {
-
-			// CONFIGURATIONS
-			case 0:
-
-				SwingUtilities.invokeLater(new Runnable() {
-
-					@Override
-					public void run() {
-
-						loadPyFileButton.setVisible(false);
-						savePyFileButton.setVisible(false);
-
-
-					}
-
-				});
-
-				break;
-
-			// PY editor
-			case 1:
-
-				SwingUtilities.invokeLater(new Runnable() {
-
-					@Override
-					public void run() {
-
-						loadPyFileButton.setVisible(true);
-						savePyFileButton.setVisible(true);
-
-					}
-
-				});
-
-				break;
-
-			default:
-				printException(null,"ShowHideButtons: index not found");
-				break;
-
-		}
 
 	}
 	
@@ -729,35 +608,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			}
 
 
-
-		} else if(command.equals("loadPyFile")) {
-
-			File pyFile = new File(burpyPath.getText().trim());
-			final FileLocation fl = FileLocation.create(pyFile);
-
-			SwingUtilities.invokeLater(new Runnable() {
-
-				@Override
-				public void run() {
-
-					try {
-						pyEditorTextArea.load(fl, null);
-					} catch (IOException e) {
-						printException(e,"Exception loading PY file");
-					}
-
-				}
-			});
-
-		} else if(command.equals("savePyFile")) {
-
-			try {
-				pyEditorTextArea.save();
-				// TODO: stop pyro and start pyro
-
-			} catch (IOException e) {
-				printException(e,"Error saving PY file");
-			}
 
 		} else if (burpyMethods.contains(command)) {
 			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
@@ -1162,19 +1012,15 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		List<String> headers = null;
 		String pyroUrl = "PYRO:BridaServicePyro@" + pyroHost.getText() +":" + pyroPort.getText();
 		if (should_auto) {
-//			itemEnc.doClick();
+
 			if (toolFlag == IBurpExtenderCallbacks.TOOL_SCANNER ||
 					toolFlag == IBurpExtenderCallbacks.TOOL_REPEATER ||
 					toolFlag == IBurpExtenderCallbacks.TOOL_INTRUDER) {
 				if (messageIsRequest) {
-//					itemEnc.doClick();
-					// Get request bytes
-					byte[] request = messageInfo.getRequest();
-					
 
-						//String urlDecodedContentParameterValue = helpers.urlDecode(contentParameter.getValue());
+					byte[] request = messageInfo.getRequest();
+
 						String ret = "";
-//						String pyroUrl = "PYRO:BridaServicePyro@localhost:19999";
 						try {
 							PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
 
@@ -1188,10 +1034,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 								stderr.println(exceptionElements[i].toString());
 							}
 						}
-						// Create the new parameter
-						//IParameter newTestParameter = helpers.buildParameter(contentParameter.getName(), helpers.urlEncode(ret), contentParameter.getType());
-						// Create the new request with the updated parameter
-						//byte[] newRequest = helpers.updateParameter(request, newTestParameter);
+
 						IRequestInfo nreqInfo = helpers.analyzeRequest(ret.getBytes());
 						headers = nreqInfo.getHeaders();
 						int nbodyOff = nreqInfo.getBodyOffset();
@@ -1199,20 +1042,10 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 						byte[] newRequest = helpers.buildHttpMessage(headers, nbody); //
 
-						// Update the messageInfo object with the modified request (otherwise the request remains the old one)
-
 						messageInfo.setRequest(newRequest);
 
 				}else {
 
-//					byte[] request = messageInfo.getRequest();
-//
-//					IRequestInfo requestInfo = helpers.analyzeRequest(request);
-//
-//					String requestStr = new String(request);
-//
-//					byte[] reqbody = requestStr.substring(requestInfo.getBodyOffset()).getBytes();
-//					if(reqbody != null) {
 						// Get response bytes
 					byte[] response = messageInfo.getResponse();
 					
@@ -1230,15 +1063,12 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 							stderr.println(exceptionElements[i].toString());
 						}
 					}
-					// Update the messageInfo object with the modified request (otherwise the request remains the old one)
-//						byte[] newResponse = ArrayUtils.addAll(Arrays.copyOfRange(response, 0, bodyOffset),ret.getBytes());
 					IResponseInfo nresInfo = helpers.analyzeResponse(ret.getBytes());
 					int nbodyOff = nresInfo.getBodyOffset();
 					byte[] nbody = ret.substring(nbodyOff).getBytes();
 					headers = nresInfo.getHeaders();
 					byte[] newResponse = helpers.buildHttpMessage(headers, nbody);
 					messageInfo.setResponse(newResponse);
-//					}
 				}
 
 			}
