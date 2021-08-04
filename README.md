@@ -16,6 +16,7 @@ m0nst3r(Song Xinlei) @ CFCA
 - @ViCrack
 
 # TODO
+- [ ] add tab's in request and response, so we don't have to click our mouse that often (allow specify which method to call for response/request tab)
 - [x] to python3, from version `1.3`
 - [x] `dynamic` function transform
 - [x] resize and context menu support for popups (@ViCrack)
