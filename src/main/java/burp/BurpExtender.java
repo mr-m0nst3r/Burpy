@@ -1,6 +1,8 @@
 package burp;
 
 import burp.ui.MessageDialog;
+import net.razorvine.pyro.NameServerProxy;
+import net.razorvine.pyro.PyroException;
 import net.razorvine.pyro.PyroProxy;
 import net.razorvine.pyro.PyroURI;
 
@@ -12,6 +14,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -28,7 +31,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 	private JPanel mainPanel;
 
-	private PyroProxy pyroBurpyService;
+	public PyroProxy pyroBurpyService;
 	private Process pyroServerProcess;
 
 	private JTextField pythonPath;
@@ -73,6 +76,9 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	private boolean lastPrintIsJS;
 
 	public List<String> burpyMethods;
+	public String serviceHost;
+	public int servicePort;
+	public String serviceObj="BurpyServicePyro";
 
 	@Override
 	public void registerExtenderCallbacks(IBurpExtenderCallbacks c) {
@@ -109,9 +115,9 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		lastPrintIsJS = false;
 
 		try {
-			InputStream inputStream = getClass().getClassLoader().getResourceAsStream("res/burpyServicePyro3.py");
+			InputStream inputStream = getClass().getClassLoader().getResourceAsStream("res/burpyServicePyro.py");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream ));
-			File outputFile = new File(System.getProperty("java.io.tmpdir") + System.getProperty("file.separator") + "burpyServicePyro3.py");
+			File outputFile = new File(System.getProperty("java.io.tmpdir") + System.getProperty("file.separator") + "burpyServicePyro.py");
 
 			FileWriter fr = new FileWriter(outputFile);
 			BufferedWriter br  = new BufferedWriter(fr);
@@ -212,7 +218,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				if(callbacks.loadExtensionSetting("pyroHost") != null)
 					pyroHost.setText(callbacks.loadExtensionSetting("pyroHost"));
 				else
-					pyroHost.setText("localhost");
+					pyroHost.setText("127.0.0.1");
 				pyroHost.setMaximumSize( pyroHost.getPreferredSize() );
 				pyroHostPanel.add(labelPyroHost);
 				pyroHostPanel.add(pyroHost);
@@ -241,7 +247,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				burpyPathPanel.add(labelBurpyPath);
 				burpyPathPanel.add(burpyPath);
 				burpyPathPanel.add(burpyPathButton);
-//                burpyPathPanel.add(fridaDefaultPathButton);
 
 				JPanel pyroPortPanel = new JPanel();
 				pyroPortPanel.setLayout(new BoxLayout(pyroPortPanel, BoxLayout.X_AXIS));
@@ -401,14 +406,21 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	
 	@SuppressWarnings("unchecked")
 	public void getMethods() {
-			
 			try {
+//				service = new PyroProxy(serviceHost, servicePort, serviceObj);
 				this.burpyMethods = (List<String>) (pyroBurpyService.call("get_methods"));
+//				stdout.println(pyroBurpyService.pyroMethods);
 			} catch (Exception e) {
 				stderr.println(e.toString());
 				StackTraceElement[] exceptionElements = e.getStackTrace();
 				for (int i = 0; i < exceptionElements.length; i++) {
 					stderr.println(exceptionElements[i].toString());
+				}
+			}finally {
+				if (this.burpyMethods != null) {
+					printSuccessMessage("methods loaded");
+				}else{
+					stdout.println("Methods loading failed");
 				}
 			}
 
@@ -418,7 +430,10 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 		Runtime rt = Runtime.getRuntime();
 
-		String[] startServerCommand = {pythonPath,"-i",pyroServicePath,pyroHost.getText().trim(),pyroPort.getText().trim(),burpyPath.getText().trim()};
+		serviceHost = pyroHost.getText().trim();
+		servicePort = Integer.parseInt(pyroPort.getText().trim());
+
+		String[] startServerCommand = {pythonPath,"-i",pyroServicePath,serviceHost,Integer.toString(servicePort),burpyPath.getText().trim()};
 
 
 		try {
@@ -440,9 +455,9 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 							final String line = stdOutput.readLine();
 
 							// Only used to handle Pyro first message (when server start)
-							if(line.equals("Ready.")) {
-
-								pyroBurpyService = new PyroProxy(new PyroURI("PYRO:BurpyServicePyro@" + pyroHost.getText().trim() + ":" + pyroPort.getText().trim()));
+//							if(line.equals("Ready.")) {
+							if(line.contains("running") || line.startsWith("Ready.")) {
+								pyroBurpyService = new PyroProxy(serviceHost,servicePort,serviceObj);
 								serverStarted = true;
 
 								SwingUtilities.invokeLater(new Runnable() {
@@ -555,8 +570,9 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 			stderrThread.stop();
 
 			try {
-				pyroBurpyService.call("shutdown");
-				pyroServerProcess.destroy();
+//				pyroBurpyService.close("shutdown");
+//				pyroServerProcess.destroy();
+				pyroServerProcess.destroyForcibly();
 				pyroBurpyService.close();
 				serverStarted = false;
 
@@ -711,8 +727,8 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				stderrThread.stop();
 
 				try {
-					pyroBurpyService.call("shutdown");
-					pyroServerProcess.destroy();
+//					pyroBurpyService.call("shutdown");
+					pyroServerProcess.destroyForcibly();
 					pyroBurpyService.close();
 					serverStarted = false;
 
@@ -962,7 +978,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 
 				pyroBurpyService.call("shutdown");
-				pyroServerProcess.destroy();
+				pyroServerProcess.destroyForcibly();
 				pyroBurpyService.close();
 
 				printSuccessMessage("Pyro server shutted down");
@@ -988,13 +1004,10 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	{
 		byte[] ret = currentPayload;
 		if(should_pro){
-			String pyroUrl = "PYRO:BridaServicePyro@" + pyroHost.getText() +":" + pyroPort.getText();
-			
+
 			try {
-				PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
 				final String s = (String) (pyroBurpyService.call("invoke_method", "processor", new String(currentPayload)));
 				ret = s.getBytes();
-				pp.close();
 			} catch (Exception e) {
 				stderr.println(e.toString());
 				StackTraceElement[] exceptionElements = e.getStackTrace();
@@ -1010,7 +1023,6 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	@Override
 	public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
 		List<String> headers = null;
-		String pyroUrl = "PYRO:BridaServicePyro@" + pyroHost.getText() +":" + pyroPort.getText();
 		if (should_auto) {
 
 			if (toolFlag == IBurpExtenderCallbacks.TOOL_SCANNER ||
@@ -1022,11 +1034,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 						String ret = "";
 						try {
-							PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
-
 							ret = (String) pyroBurpyService.call("invoke_method", "encrypt", helpers.base64Encode(request));
-
-							pp.close();
 						} catch(Exception e) {
 							stderr.println(e.toString());
 							StackTraceElement[] exceptionElements = e.getStackTrace();
@@ -1051,11 +1059,8 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 					
 					String ret = "";
 					try {
-						PyroProxy pp = new PyroProxy(new PyroURI(pyroUrl));
 						ret = (String) pyroBurpyService.call("invoke_method", "decrypt", helpers.base64Encode(response));
-
 						stderr.println(ret);
-						pp.close();
 					} catch(Exception e) {
 						stderr.println(e.toString());
 						StackTraceElement[] exceptionElements = e.getStackTrace();
@@ -1073,6 +1078,31 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 			}
 
+		}
+
+	}
+
+	public static void main(String[] args) throws PyroException, java.io.IOException {
+		// for testing purpose
+		System.out.println("Initializing service");
+//		NameServerProxy ns = NameServerProxy.locateNS(null);
+		PyroProxy service = null;
+		try {
+			service = new PyroProxy("127.0.0.1", 10999, "BurpyServicePyro");
+		}catch (PyroException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		System.out.println("Getting methods");
+		try {
+			Object methods_obj = service.call("get_methods", null);
+			System.out.println(methods_obj.toString());
+		}catch (PyroException e) {
+			System.out.println("PyroException");
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 
 	}
