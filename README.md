@@ -33,18 +33,22 @@ m0nst3r(Song Xinlei) @ CFCA
 - migration to python3
 - dynamic context menu items extracted from your python script
 - add `first_line` variable to `header` dict
+- remove py editor, because it seems quite useless, and may lead to file mis-overwritten.
+- upgrade pyro4 to pyro5, due to a bug#80 of pyrolite
 
-# Usage (`=v2.0`)
+# Usage (`>=v2.0`)
 > NOTE: MAKE SURE YOU HAVE ALL DEPENDENCIES INSTALLED, INCLUDING THE DEPENDENCIES NEEDED FOR YOUR PYTHON SCRIPT
 
-1. install PyRO, version 4 is used.
-2. configure python and pyro settings
-3. configure the python file you wanna run
-4. click "Start server", burpy will read your python script file and get all functions to generate the context menu
-5. use context memu item to invoke your script's regarding function
-6. write own payload processor, especially usefull with enc/dec
+1. ~~install PyRO, version 4 is used.~~
+2. install Pyro, version 5 is used: `pip install pyro5`
+3. configure python and pyro settings: **DON'T USE `LOCALHOST`, use `127.0.0.1` instead**
+4. configure the python file you wanna run
+5. click "Start server", burpy will read your python script file and get all functions to generate the context menu
+6. use context memu item to invoke your script's regarding function
+7. write own payload processor, especially usefull with enc/dec
 
-> Install editor plugin example: mvn install:install-file -DgroupId=com.fifesoft -DartifactId=rsyntaxtextarea -Dversion=2.6.1.edited -Dpackaging=jar -Dfile=/home/m0nst3r/study/java/rsyntaxtextarea-2.6.1.edited.jar
+> ~~Install editor plugin example: mvn install:install-file -DgroupId=com.fifesoft -DartifactId=rsyntaxtextarea -Dversion=2.6.1.edited -Dpackaging=jar -Dfile=/home/m0nst3r/study/java/rsyntaxtextarea-2.6.1.edited.jar~~
+> not necessary after version 2.4.4, as py editor was removed.
 
 # the python script sample
 Just write your own logic to modify the header/body as your need, and return the header/body, just that simple!
