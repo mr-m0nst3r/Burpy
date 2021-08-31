@@ -1,10 +1,8 @@
 package burp;
 
 import burp.ui.MessageDialog;
-import net.razorvine.pyro.NameServerProxy;
 import net.razorvine.pyro.PyroException;
 import net.razorvine.pyro.PyroProxy;
-import net.razorvine.pyro.PyroURI;
 
 import javax.swing.*;
 import javax.swing.text.*;
@@ -21,7 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-public class BurpExtender implements IBurpExtender, ITab, ActionListener, IContextMenuFactory, MouseListener, IExtensionStateListener, IIntruderPayloadProcessor,IHttpListener {
+public class BurpExtender implements IBurpExtender, ITab, ActionListener, IContextMenuFactory, MouseListener, IExtensionStateListener, IIntruderPayloadProcessor,IHttpListener,IMessageEditorTabFactory {
 
 	private IBurpExtenderCallbacks callbacks;
 	private IExtensionHelpers helpers;
@@ -101,6 +99,9 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 		// register to execute actions on unload
 		callbacks.registerExtensionStateListener(this);
+
+		// register editor tab
+		callbacks.registerMessageEditorTabFactory(this);
 
 		// Initialize stdout and stderr
 		stdout = new PrintWriter(callbacks.getStdout(), true);
@@ -1082,6 +1083,90 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 	}
 
+	@Override
+	public IMessageEditorTab createNewInstance(IMessageEditorController controller, boolean editable) {
+		return new iMessageEditorTab(controller, editable);
+	}
+
+	public class iMessageEditorTab implements IMessageEditorTab {
+
+		private IMessageEditorController controller;
+		private ITextEditor iTextEditor = callbacks.createTextEditor();
+		private byte[] currentMessage;
+
+
+		public iMessageEditorTab(IMessageEditorController controller, boolean editable) {
+			this.controller = controller;
+		}
+
+
+		@Override
+		public String getTabCaption() {
+			return "BurpyTab";
+		}
+
+		@Override
+		public Component getUiComponent() {
+			return iTextEditor.getComponent();
+		}
+
+		@Override
+		public boolean isEnabled(byte[] content, boolean isRequest) {
+			return true;
+		}
+
+		@Override
+		public void setMessage(byte[] content, boolean isRequest) {
+
+			String ret = "";
+			try {
+				ret = (String) pyroBurpyService.call("invoke_method", "decrypt", helpers.base64Encode(content));
+			} catch(Exception e) {
+				stderr.println(e.toString());
+				StackTraceElement[] exceptionElements = e.getStackTrace();
+				for(int i=0; i< exceptionElements.length; i++) {
+					stderr.println(exceptionElements[i].toString());
+				}
+			}
+			iTextEditor.setText(ret.getBytes(StandardCharsets.UTF_8));
+
+			currentMessage = ret.getBytes(StandardCharsets.UTF_8);
+		}
+
+		@Override
+		public byte[] getMessage() {
+			if (iTextEditor.isTextModified()){
+				byte[] data = iTextEditor.getText();
+				String ret = "";
+				try {
+					ret = (String) pyroBurpyService.call("invoke_method", "encrypt", helpers.base64Encode(data));
+				} catch(Exception e) {
+					stderr.println(e.toString());
+					StackTraceElement[] exceptionElements = e.getStackTrace();
+					for(int i=0; i< exceptionElements.length; i++) {
+						stderr.println(exceptionElements[i].toString());
+					}
+				}
+
+				return ret.getBytes(StandardCharsets.UTF_8);
+			} else {
+				return currentMessage;
+			}
+		}
+
+		@Override
+		public boolean isModified() {
+			return iTextEditor.isTextModified();
+		}
+
+		@Override
+		public byte[] getSelectedData() {
+			return iTextEditor.getSelectedText();
+		}
+	}
+
+
+
 	public static void main(String[] args) throws PyroException, java.io.IOException {
 		// for testing purpose
 		System.out.println("Initializing service");
@@ -1106,6 +1191,5 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		}
 
 	}
-
 }
 
