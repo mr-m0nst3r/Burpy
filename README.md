@@ -17,7 +17,7 @@ m0nst3r(Song Xinlei) @ CFCA
 
 
 # TODO
-- [ ] add tab's in request and response, so we don't have to click our mouse that often (allow specify which method to call for response/request tab)
+- [x] add tab's in request and response, so we don't have to click our mouse that often (allow specify which method to call for response/request tab)
 - [x] to python3, from version `1.3`
 - [x] `dynamic` function transform
 - [x] resize and context menu support for popups (@ViCrack)
@@ -36,6 +36,7 @@ m0nst3r(Song Xinlei) @ CFCA
 - add `first_line` variable to `header` dict
 - remove py editor, because it seems quite useless, and may lead to file mis-overwritten.
 - upgrade pyro4 to pyro5, due to a bug#80 of pyrolite
+- add message tab to call `encrypt/decrypt` automatically
 
 # Usage (`>=v2.0`)
 > NOTE: MAKE SURE YOU HAVE ALL DEPENDENCIES INSTALLED, INCLUDING THE DEPENDENCIES NEEDED FOR YOUR PYTHON SCRIPT
