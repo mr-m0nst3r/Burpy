@@ -9,7 +9,7 @@ And, sometimes, you may just want some customized function to modify part of the
 If you wanna take advantage of the intruder with payloads need to be encrypted, you need to `Enable Processor`, and write your own payload processor function.
 
 # Author
-m0nst3r(Song Xinlei) @ CFCA
+m0nst3r(Song Xinlei)
 
 # Contributors with love
 - @Center-Sun
