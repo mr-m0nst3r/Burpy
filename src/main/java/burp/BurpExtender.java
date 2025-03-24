@@ -13,8 +13,10 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -116,24 +118,29 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 		lastPrintIsJS = false;
 
 		try {
-			InputStream inputStream = getClass().getClassLoader().getResourceAsStream("res/burpyServicePyro.py");
-			BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream ));
-			File outputFile = new File(System.getProperty("java.io.tmpdir") + System.getProperty("file.separator") + "burpyServicePyro.py");
+			InputStream inputStream = getClass().getClassLoader().getResourceAsStream("burpyServicePyro.py");
+			if (inputStream == null) {
+				stderr.println("Resource file not found: burpyServicePyro.py");
+			}
 
-			FileWriter fr = new FileWriter(outputFile);
-			BufferedWriter br  = new BufferedWriter(fr);
+			BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+			File outputFile = new File(System.getProperty("java.io.tmpdir"), "burpyServicePyro.py");
 
-			String s;
-			while ((s = reader.readLine())!=null) {
-
-				br.write(s);
-				br.newLine();
-
+			if (!outputFile.exists() && !outputFile.createNewFile()) {
+				printException(null, "Failed to create output file: " + outputFile.getAbsolutePath());
+			}
+			try (BufferedWriter br = new BufferedWriter(new FileWriter(outputFile))) {
+				String s;
+				while ((s = reader.readLine()) != null) {
+					br.write(s);
+					br.newLine();
+				}
 			}
 			reader.close();
-			br.close();
-
 			pythonScript = outputFile.getAbsolutePath();
+			if (pythonScript.isEmpty()) {
+				printException(null, "Python script path is null or empty!");
+			}
 
 		} catch(Exception e) {
 
@@ -428,113 +435,98 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 	}
 
 	private void launchPyroServer(String pythonPath, String pyroServicePath) {
-
 		Runtime rt = Runtime.getRuntime();
-
 		serviceHost = pyroHost.getText().trim();
 		servicePort = Integer.parseInt(pyroPort.getText().trim());
 
 		String[] startServerCommand = {pythonPath,"-i",pyroServicePath,serviceHost,Integer.toString(servicePort),burpyPath.getText().trim()};
 
-
 		try {
 			documentServerStatus.insertString(0, "starting up ... ", redStyle);
+
+			// Create a timeout for server startup
+			final int SERVER_STARTUP_TIMEOUT = 30; // seconds
+			final CountDownLatch startupLatch = new CountDownLatch(1);
+
 			pyroServerProcess = rt.exec(startServerCommand);
 
 			final BufferedReader stdOutput = new BufferedReader(new InputStreamReader(pyroServerProcess.getInputStream()));
 			final BufferedReader stdError = new BufferedReader(new InputStreamReader(pyroServerProcess.getErrorStream()));
 
 			// Initialize thread that will read stdout
-			stdoutThread = new Thread() {
+			stdoutThread = new Thread(() -> {
+				while (!Thread.currentThread().isInterrupted()) {
+					try {
+						final String line = stdOutput.readLine();
+						if (line == null) break;
 
-				public void run() {
-
-					while(true) {
-
-						try {
-
-							final String line = stdOutput.readLine();
-
-							// Only used to handle Pyro first message (when server start)
-//							if(line.equals("Ready.")) {
-							if(line.contains("running") || line.startsWith("Ready.")) {
-								pyroBurpyService = new PyroProxy(serviceHost,servicePort,serviceObj);
+						if (line.contains("running") || line.startsWith("Ready.")) {
+							try {
+								pyroBurpyService = new PyroProxy(serviceHost, servicePort, serviceObj);
 								serverStarted = true;
+								startupLatch.countDown(); // Signal server started
 
-								SwingUtilities.invokeLater(new Runnable() {
-
-									@Override
-									public void run() {
-
-										serverStatus.setText("");
-										serverStatusButtons.setText("");
-										try {
-											documentServerStatus.insertString(0, "running", greenStyle);
-											documentServerStatusButtons.insertString(0, "Server running", greenStyle);
-										} catch (BadLocationException e) {
-
-											printException(e,"Exception setting labels");
-
-										}
-
+								SwingUtilities.invokeLater(() -> {
+									serverStatus.setText("");
+									serverStatusButtons.setText("");
+									try {
+										documentServerStatus.insertString(0, "running", greenStyle);
+										documentServerStatusButtons.insertString(0, "Server running", greenStyle);
+									} catch (BadLocationException e) {
+										printException(e,"Exception setting labels");
 									}
 								});
 
 								printSuccessMessage("Pyro server started correctly");
 								printSuccessMessage("Better use \"Kill Server\" after finished!");
-								
 								printSuccessMessage("Analyzing scripts");
 								getMethods();
-								// Standard line
-							} else {
-
-								printJSMessage(line);
-
+							} catch (Exception e) {
+								printException(e, "Failed to initialize Pyro service");
+								stopServer();
 							}
-
-
-						} catch (IOException e) {
+						} else {
+							printJSMessage(line);
+						}
+					} catch (IOException e) {
+						if (!Thread.currentThread().isInterrupted()) {
 							printException(e,"Error reading Pyro stdout");
 						}
-
+						break;
 					}
 				}
-
-			};
+			});
 			stdoutThread.start();
 
 			// Initialize thread that will read stderr
-			stderrThread = new Thread() {
-
-				public void run() {
-
-					while(true) {
-
-						try {
-
-							final String line = stdError.readLine();
-							printException(null,line);
-
-						} catch (IOException e) {
-
+			stderrThread = new Thread(() -> {
+				while (!Thread.currentThread().isInterrupted()) {
+					try {
+						final String line = stdError.readLine();
+						if (line == null) break;
+						printException(null,line);
+					} catch (IOException e) {
+						if (!Thread.currentThread().isInterrupted()) {
 							printException(e,"Error reading Pyro stderr");
-
 						}
-
+						break;
 					}
 				}
-
-			};
+			});
 			stderrThread.start();
 
+			// Wait for server startup with timeout
+			if (!startupLatch.await(SERVER_STARTUP_TIMEOUT, TimeUnit.SECONDS)) {
+				printException(null, "Server startup timed out after " + SERVER_STARTUP_TIMEOUT + " seconds");
+				stopServer();
+			}
+
 		} catch (final Exception e1) {
-
 			printException(e1,"Exception starting Pyro server");
-
+			stopServer();
 		}
-
-
 	}
+
 
 	@Override
 	public String getTabCaption() {
@@ -561,218 +553,184 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 	@Override
 	public void actionPerformed(ActionEvent event) {
-
 		String command = event.getActionCommand();
 
+		switch (command) {
+			case "killServer":
+				stopServer();
+				break;
 
-		if(command.equals("killServer") && serverStarted) {
+			case "startServer":
+				if (!serverStarted) {
+					File burpyFile = new File(burpyPath.getText().trim());
+					if (burpyFile.exists()) {
+						savePersistentSettings();
 
-			stdoutThread.stop();
-			stderrThread.stop();
-
-			try {
-//				pyroBurpyService.close("shutdown");
-//				pyroServerProcess.destroy();
-				pyroServerProcess.destroyForcibly();
-				pyroBurpyService.close();
-				serverStarted = false;
-
-				SwingUtilities.invokeLater(new Runnable() {
-
-					@Override
-					public void run() {
-
-						serverStatus.setText("");
-						serverStatusButtons.setText("");
-						try {
-							documentServerStatus.insertString(0, "NOT running", redStyle);
-							documentServerStatusButtons.insertString(0, "Server stopped", redStyle);
-						} catch (BadLocationException e) {
-							printException(e,"Exception setting labels");
+						String pythonPathStr = pythonPath.getText();
+						if (pythonPathStr == null || pythonPathStr.trim().isEmpty()) {
+							printException(null, "Python Path is empty!");
+							return;
 						}
 
+						if (pythonScript == null || pythonScript.trim().isEmpty()) {
+							printException(null, "Python script is empty!");
+							return;
+						}
+
+						try {
+							launchPyroServer(pythonPathStr.trim(), pythonScript);
+						} catch (final Exception e) {
+							printException(e, "Exception starting Pyro server");
+						}
+					} else {
+						printException(null, "Burpy File not found!");
 					}
+				}
+				break;
+
+			case "pythonPathSelectFile":
+				selectFileAndSetPath(pythonPath, "Python Path");
+				break;
+
+			case "burpyPathSelectFile":
+				selectFileAndSetPath(burpyPath, "Burpy PY Path");
+				break;
+
+			case "clearConsole":
+				SwingUtilities.invokeLater(() -> {
+					String newConsoleText = "<font color=\"green\">" +
+							"<b>**** Console cleared successfully ****</b><br/>" +
+							"</font><br/>";
+					pluginConsoleTextArea.setText(newConsoleText);
 				});
+				break;
 
-				printSuccessMessage("Pyro server shutted down");
-
-			} catch (final Exception e) {
-
-				printException(e,"Exception shutting down Pyro server");
-
-			}
-
-
-		} else if(command.equals("startServer") && !serverStarted) {
-
-			File burpyFile = new File(burpyPath.getText().trim());
-			if (burpyFile.exists()) {
-
-				savePersistentSettings();
+			case "reloadScript":
+				stopServer();
 
 				try {
-					
 					launchPyroServer(pythonPath.getText().trim(), pythonScript);
-
+					getMethods();
 				} catch (final Exception e) {
 
 					printException(null, "Exception starting Pyro server");
-
 				}
-			}else {
-				printException(null,"Burpy File not found!");
+				break;
 
-			}
+			default:
+				if (burpyMethods.contains(command)) {
+					processBurpyCommand(command);
+				}
+				break;
+		}
+	}
 
-
-
-		} else if (burpyMethods.contains(command)) {
-			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
-			byte selectedInvocationContext = currentInvocation.getInvocationContext();
-
+	private void stopServer() {
+		if (serverStarted) {
 			try {
-				// pass directly the bytes of http
-				byte[] selectedRequestOrResponse = null;
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
-					selectedRequestOrResponse = selectedItems[0].getRequest();
-				} else {
-					selectedRequestOrResponse = selectedItems[0].getResponse();
-				}
-				
-				String ret_str = (String) pyroBurpyService.call("invoke_method", command, helpers.base64Encode(selectedRequestOrResponse));
-				
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					selectedItems[0].setRequest(ret_str.getBytes());
-				} else {
-					
-					final String msg = ret_str.substring(ret_str.indexOf("\r\n\r\n")+4);
-					SwingUtilities.invokeLater(new Runnable() {
-						
-						@Override
-						public void run() {
-							MessageDialog.show("Burpy "+command, msg);
-						}
-					});
-				}
+				// Create a timeout for shutdown
+				final int SHUTDOWN_TIMEOUT = 5; // seconds
+				final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
-			} catch (Exception e) {
-
-				printException(e, "Exception with custom context application");
-
-			}
-		} else if(command.equals("pythonPathSelectFile")) {
-
-			JFrame parentFrame = new JFrame();
-			JFileChooser fileChooser = new JFileChooser();
-			fileChooser.setDialogTitle("Python Path");
-
-			int userSelection = fileChooser.showOpenDialog(parentFrame);
-
-			if(userSelection == JFileChooser.APPROVE_OPTION) {
-
-				final File pythonPathFile = fileChooser.getSelectedFile();
-
-				SwingUtilities.invokeLater(new Runnable() {
-
-					@Override
-					public void run() {
-						pythonPath.setText(pythonPathFile.getAbsolutePath());
+				// First try to shutdown Pyro service gracefully
+				if (pyroBurpyService != null) {
+					try {
+						pyroBurpyService.call("shutdown");
+						pyroBurpyService.close();
+					} catch (Exception ignored) {
+						// Ignore shutdown exceptions
 					}
-
-				});
-
-			}
-
-		} else if(command.equals("burpyPathSelectFile")) {
-
-			JFrame parentFrame = new JFrame();
-			JFileChooser fileChooser = new JFileChooser();
-			fileChooser.setDialogTitle("Burpy PY Path");
-
-			int userSelection = fileChooser.showOpenDialog(parentFrame);
-
-			if(userSelection == JFileChooser.APPROVE_OPTION) {
-
-				final File burpyPathFile = fileChooser.getSelectedFile();
-
-				SwingUtilities.invokeLater(new Runnable() {
-
-					@Override
-					public void run() {
-						burpyPath.setText(burpyPathFile.getAbsolutePath());
-					}
-
-				});
-
-			}
-
-		} else if(command.startsWith("clearConsole")) {
-
-			SwingUtilities.invokeLater(new Runnable() {
-
-				@Override
-				public void run() {
-					String newConsoleText = "<font color=\"green\">";
-					newConsoleText = newConsoleText + "<b>**** Console cleared successfully ****</b><br/>";
-					newConsoleText = newConsoleText + "</font><br/>";
-
-					pluginConsoleTextArea.setText(newConsoleText);
-
+					pyroBurpyService = null;
 				}
 
-			});
+				// Mark server as stopped
+				serverStarted = false;
 
-		} else if(command.startsWith("reloadScript")){
-			if(serverStarted) {
-				stdoutThread.stop();
-				stderrThread.stop();
-
-				try {
-//					pyroBurpyService.call("shutdown");
+				// Force terminate Python process
+				if (pyroServerProcess != null) {
 					pyroServerProcess.destroyForcibly();
-					pyroBurpyService.close();
-					serverStarted = false;
 
-					SwingUtilities.invokeLater(new Runnable() {
-
-						@Override
-						public void run() {
-
-							serverStatus.setText("");
-							serverStatusButtons.setText("");
-							try {
-								documentServerStatus.insertString(0, "NOT running", redStyle);
-								documentServerStatusButtons.insertString(0, "Server stopped", redStyle);
-							} catch (BadLocationException e) {
-								printException(e, "Exception setting labels");
-							}
-
-						}
-					});
-
-					printSuccessMessage("Pyro server shutted down");
-
-
-				} catch (final Exception e) {
-
-					printException(e, "Exception shutting down Pyro server");
-
+					// Wait for process termination with timeout
+					if (!pyroServerProcess.waitFor(SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)) {
+						stderr.println("Warning: Python process did not terminate in time");
+					}
+					pyroServerProcess = null;
 				}
-			}
 
-			try {
+				// Interrupt and wait for threads to end
+				if (stdoutThread != null) {
+					stdoutThread.interrupt();
+					stdoutThread.join(1000); // Wait max 1 second
+					stdoutThread = null;
+				}
+				if (stderrThread != null) {
+					stderrThread.interrupt();
+					stderrThread.join(1000); // Wait max 1 second
+					stderrThread = null;
+				}
 
-				launchPyroServer(pythonPath.getText().trim(),pythonScript);
-				getMethods();
+				// Update UI status
+				SwingUtilities.invokeLater(() -> {
+					serverStatus.setText("");
+					serverStatusButtons.setText("");
+					try {
+						documentServerStatus.insertString(0, "NOT running", redStyle);
+						documentServerStatusButtons.insertString(0, "Server stopped", redStyle);
+					} catch (BadLocationException e) {
+						printException(e, "Exception setting labels");
+					}
+				});
+
+				printSuccessMessage("Pyro server shut down successfully");
 
 			} catch (final Exception e) {
+				printException(e, "Exception shutting down Pyro server");
+			}
+		}
+	}
 
-				printException(null,"Exception starting Pyro server");
+	/**
+	 * 处理选择文件并设置路径
+	 */
+	private void selectFileAndSetPath(JTextField textField, String dialogTitle) {
+		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setDialogTitle(dialogTitle);
 
+		int userSelection = fileChooser.showOpenDialog(null);
+		if (userSelection == JFileChooser.APPROVE_OPTION) {
+			File selectedFile = fileChooser.getSelectedFile();
+			SwingUtilities.invokeLater(() -> textField.setText(selectedFile.getAbsolutePath()));
+		}
+	}
+
+	/**
+	 * 处理 Burpy 方法调用
+	 */
+	private void processBurpyCommand(String command) {
+		IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
+		byte selectedInvocationContext = currentInvocation.getInvocationContext();
+
+		try {
+			byte[] selectedRequestOrResponse;
+			if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST ||
+					selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+				selectedRequestOrResponse = selectedItems[0].getRequest();
+			} else {
+				selectedRequestOrResponse = selectedItems[0].getResponse();
 			}
 
-		}
+			String retStr = (String) pyroBurpyService.call("invoke_method", command, helpers.base64Encode(selectedRequestOrResponse));
 
+			if (selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+				selectedItems[0].setRequest(retStr.getBytes());
+			} else {
+				final String msg = retStr.substring(retStr.indexOf("\r\n\r\n") + 4);
+				SwingUtilities.invokeLater(() -> MessageDialog.show("Burpy " + command, msg));
+			}
+
+		} catch (Exception e) {
+			printException(e, "Exception with custom context application");
+		}
 	}
 
 	@Override
@@ -944,7 +902,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 				newConsoleText = newConsoleText + "<b>" + message + "</b><br/>";
 
 				if(e != null) {
-					newConsoleText = newConsoleText + e.toString() + "<br/>";
+					newConsoleText = newConsoleText + e + "<br/>";
 					//consoleText = consoleText + e.getMessage() + "<br/>";
 					StackTraceElement[] exceptionElements = e.getStackTrace();
 					for(int i=0; i< exceptionElements.length; i++) {
@@ -970,8 +928,8 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 		if(serverStarted) {
 
-			stdoutThread.stop();
-			stderrThread.stop();
+			stdoutThread.interrupt();
+			stderrThread.interrupt();
 
 			try {
 
@@ -1167,7 +1125,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener, IConte
 
 
 
-	public static void main(String[] args) throws PyroException, java.io.IOException {
+	public static void main(String[] args) throws PyroException, IOException {
 		// for testing purpose
 		System.out.println("Initializing service");
 //		NameServerProxy ns = NameServerProxy.locateNS(null);
