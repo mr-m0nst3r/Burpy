@@ -10,6 +10,55 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>    
   </properties>
+
+  <build>
+	<plugins>
+		<plugin>
+			<artifactId>maven-assembly-plugin</artifactId>
+			
+			<configuration>  
+			              
+				<minimizeJar>true</minimizeJar>
+	           
+				<descriptorRefs>
+					<descriptorRef>jar-with-dependencies</descriptorRef>
+				</descriptorRefs>
+	
+				<archive>
+					<manifest>
+						<addClasspath>true</addClasspath>
+					</manifest>
+				</archive>
+				
+				<source>1.7</source>
+	        	<target>1.7</target>
+				
+			</configuration>        
+                
+			<executions>
+				<execution>
+					<id>make-assembly</id>
+					<phase>package</phase>
+					<goals>
+						<goal>single</goal>
+					</goals>
+				</execution>
+			</executions>
+			
+		</plugin>
+	</plugins>
+	
+	<resources>
+ 		<resource>
+  			<directory>.</directory>
+  			<includes>
+    			<include>res/*.*</include>
+  			</includes>
+ 		</resource>
+	</resources>
+	
+  </build>
+
   <dependencies>
   
 	<dependency>
